@@ -25,7 +25,7 @@ def description():
 def version():
   return "Version 1.0"
 def qgisMinimumVersion():
-  return "1.0"
+  return "1.5"
 def classFactory(iface):
   # load GeoCoding class from file GeoCoding
   from QuickWKT import QuickWKT
