@@ -35,8 +35,6 @@ class QuickWKT:
         # Save reference to the QGIS interface
         self.iface = iface
         self.canvas = iface.mapCanvas()
-        # store layer id
-        self.layerid = ''
 
     def initGui(self):
         # Create action that will start plugin
@@ -55,6 +53,10 @@ class QuickWKT:
         self.iface.addPluginToMenu("QuickWKT", self.action)
         self.iface.addPluginToMenu("QuickWKT", self.aboutAction)
 
+        # create dialog
+        examples = """examples:\nPOINT(-5 10)\nLINESTRING(-0 0, 10 10, 20 0, 0 -20)\nPOLYGON((-0 0, 10 10, 10 -10, 0 0))\nPOLYGON ((35 10, 10 20, 15 40, 45 45, 35 10), (20 30, 35 35, 30 20, 20 30)) polygon with hole\nMULTIPOINT ((10 40), (40 30), (20 20), (30 10))"""
+        self.dlg = QuickWKTDialog()
+        self.dlg.wkt.setPlainText(examples)
 
 
     def unload(self):
@@ -70,91 +72,85 @@ class QuickWKT:
 
     # run
     def quickwkt(self):
-        # create and show the dialog
-        dlg = QuickWKTDialog()
+
         # show the dialog
-        dlg.show()
-        result = dlg.exec_()
+        self.dlg.show()
+        result = self.dlg.exec_()
         # See if OK was pressed
-        if result == 1 and dlg.wkt.toPlainText():
+        if result == 1 and self.dlg.wkt.toPlainText():
             try:
-                self.save_wkt(unicode(dlg.wkt.toPlainText()))
+                self.save_wkt(unicode(self.dlg.wkt.toPlainText()))
             except Exception, e:
                 QMessageBox.information(self.iface.mainWindow(), QCoreApplication.translate('QuickWKT', "QuickWKT plugin error"), QCoreApplication.translate('QuickWKT', "There was an error with the service:<br /><strong>%1</strong>").arg(unicode(e)))
                 return
-
-
-            # Set the extent to our new rectangle
-            #self.canvas.setExtent(rect)
             # Refresh the map
-            #self.canvas.refresh()
+            self.canvas.refresh()
             return
+
+
+    def createLayer(self, typeString):
+            layer = QgsVectorLayer(typeString, "QuickWKT "+typeString, "memory")
+            # TODO this should come from mapcanvas, not from project file
+ #           p = QgsProject.instance()
+ #           (proj4string,ok) = p.readEntry("SpatialRefSys","ProjectCRSProj4String")
+ #           crs = QgsCoordinateReferenceSystem()
+ #           crs.createFromProj4(proj4string)
+ #           layer.setCrs(crs)
+            # add attribute id, purely to make the features selectable from within attribute table
+            layer.dataProvider().addAttributes([QgsField("name", QVariant.String)])
+            QgsMapLayerRegistry.instance().addMapLayer(layer)
+            return layer
+
 
     # save wkt to file, wkt is in project's crs
     def save_wkt(self, wkt):
-        qDebug('Saving WKT ')
-        # create and add the point layer if not exists or not set
-        if not QgsMapLayerRegistry.instance().mapLayer(self.layerid) :
-            # create layer with same CRS as project
-            self.point_layer = QgsVectorLayer("Point", "QuickWKT Point", "memory")
-            self.line_layer = QgsVectorLayer("LineString", "QuickWKT Line", "memory")
-            self.polygon_layer = QgsVectorLayer("Polygon", "QuickWKT Polygon", "memory")
 
-            self.point_provider = self.point_layer.dataProvider()
-            self.line_provider = self.line_layer.dataProvider()
-            self.polygon_provider = self.polygon_layer.dataProvider()
+        # supported types as needed for layer creation
+        typeMap = { 0:"Point", 1:"LineString", 2:"Polygon" }
+        featuresByGType = {}
+        errors = ""
 
-            p = QgsProject.instance()
-            (proj4string,ok) = p.readEntry("SpatialRefSys","ProjectCRSProj4String")
-            crs = QgsCoordinateReferenceSystem()
-            crs.createFromProj4(proj4string)
+        # check all lines in text adn try to make geometry of it, collecting errors and features
+        for wktLine in wkt.split('\n'):
+            try:
+                g = QgsGeometry.fromWkt(wktLine)
+                f = QgsFeature()
+                f.setGeometry(g)
+                if g.type() in featuresByGType:
+                    featuresByGType.get(g.type()).append(f)
+                else:
+                    featuresByGType[g.type()]=[f]
+            except:
+                errors+=('-    '+wktLine+'\n')
+        if len(errors)>0:
+            # TODO either quit or succeed ignoring the errors
+            infoString = QString(QCoreApplication.translate('QuickWKT', "These line(s) are not WKT or not a supported WKT type:\n" + errors + "Do you want to ignore those lines (OK) \nor Cancel the operation (Cancel)?"))
+            res = QMessageBox.question(self.iface.mainWindow(), "Warning QuickWKT", infoString, QMessageBox.Ok | QMessageBox.Cancel)
+            if res == QMessageBox.Cancel:
+                return
 
-            self.point_layer.setCrs(crs)
-            self.line_layer.setCrs(crs)
-            self.polygon_layer.setCrs(crs)
-
-            # add layer if not already
-            QgsMapLayerRegistry.instance().addMapLayer(self.point_layer)
-            QgsMapLayerRegistry.instance().addMapLayer(self.line_layer)
-            QgsMapLayerRegistry.instance().addMapLayer(self.polygon_layer)
-
-            # store layer id
-            self.layerid = QgsMapLayerRegistry.instance().mapLayers().keys()[-1]
-
-
-
-        # add a feature
-        fet = QgsFeature()
-
-        g = QgsGeometry.fromWkt(wkt)
-        qDebug('Read WKT type : %s' % g.type())
-        fet.setGeometry(g)
-
-        if g.type() == 0:
-            self.point_provider.addFeatures( [ fet ] )
-            # update layer's extent when new features have been added
-            # because change of extent in provider is not propagated to the layer
-            self.point_layer.updateExtents()
-        elif g.type() == 1:
-            self.line_provider.addFeatures( [ fet ] )
-            # update layer's extent when new features have been added
-            # because change of extent in provider is not propagated to the layer
-            self.line_layer.updateExtents()
-        elif  g.type() == 2:
-            self.polygon_provider.addFeatures( [ fet ] )
-            # update layer's extent when new features have been added
-            # because change of extent in provider is not propagated to the layer
-            self.polygon_layer.updateExtents()
-        else:
-            infoString = QString(QCoreApplication.translate('QuickWKT', "Error: unknown geometry type"))
-            QMessageBox.information(self.iface.mainWindow(), "Error QuickWKT",infoString)
+        # create OR reuse a layer for every geometry type
+        for typ in featuresByGType.keys():
+            # it's possible that the user tried an exotic valid wkt which we cannot handle
+            if not typ in typeMap.keys():
+                infoString = "This type of WKT-geometry is not supported: " + typ
+                QMessageBox.information(self.iface.mainWindow(), "Error QuickWKT", infoString)
+            else:
+                layer = self.getLayer( 'QuickWKT_'+typeMap[typ])
+                if not layer or self.dlg.cbxnewlayer.isChecked():
+                    layer = self.createLayer( typeMap[typ] )
+                layer.dataProvider().addFeatures( featuresByGType.get(typ) )
+                layer.updateExtents()
+                layer.reload()
+                self.canvas.refresh()
 
 
-        self.canvas.refresh()
-
-
+    def getLayer(self, layerId):
+        for layer in QgsMapLayerRegistry.instance().mapLayers().values():
+            if  layer.id().startsWith(layerId):
+                return layer
+        return None
 
 
 if __name__ == "__main__":
     pass
-

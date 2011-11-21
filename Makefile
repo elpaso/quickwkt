@@ -2,6 +2,8 @@
 
 all: clean compile package localrepo
 
+install: copy2qgis
+
 compile:
 	pyuic4 -o Ui_QuickWKT.py Ui_QuickWKT.ui
 	pyrcc4 -o resources.py resources.qrc
@@ -16,6 +18,9 @@ package: clean
 
 localrepo:
 	cp ../QuickWKT.zip /home/ale/public_html/qgis/QuickWKT.zip
+
+copy2qgis: package
+	unzip -o ../QuickWKT.zip -d ~/.qgis/python/plugins
 
 check test:
 	@echo "Sorry: not implemented yet."
