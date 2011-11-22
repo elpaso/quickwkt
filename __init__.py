@@ -18,15 +18,26 @@ email                : info@itopen.it
  ***************************************************************************/
  This script initializes the plugin, making it known to QGIS.
 """
+
+
 def name():
-  return "QuickWKT"
+    return "QuickWKT"
+
+
 def description():
-  return "Quick WKT viewer"
+    return "Quick WKT viewer"
+
+
 def version():
-  return "Version 1.0"
+    return "Version 1.0"
+
+
 def qgisMinimumVersion():
-  return "1.5"
+    return "1.5"
+
+
 def classFactory(iface):
-  # load GeoCoding class from file GeoCoding
-  from QuickWKT import QuickWKT
-  return QuickWKT(iface)
+
+    # load GeoCoding class from file GeoCoding
+    from QuickWKT import QuickWKT
+    return QuickWKT(iface)

@@ -22,12 +22,13 @@ from PyQt4.QtCore import *
 from PyQt4.QtGui import *
 from qgis.core import *
 
-import sys, os
+import re
 
 # Initialize Qt resources from file resources.py
-import resources
+# import resources
 # Import the code for the dialog
 from QuickWKTDialog import QuickWKTDialog
+
 
 class QuickWKT:
 
@@ -35,6 +36,8 @@ class QuickWKT:
         # Save reference to the QGIS interface
         self.iface = iface
         self.canvas = iface.mapCanvas()
+
+        self.layerNum = 1
 
     def initGui(self):
         # Create action that will start plugin
@@ -45,32 +48,29 @@ class QuickWKT:
 
         # Add toolbar button and menu item
 
-        self.aboutAction=QAction(QIcon(":/plugins/QuickWKT/about_icon.png"), QCoreApplication.translate('QuickWKT', "&About"), self.iface.mainWindow())
+        self.aboutAction = QAction(QIcon(":/plugins/QuickWKT/about_icon.png"), QCoreApplication.translate('QuickWKT', "&About"), self.iface.mainWindow())
         QObject.connect(self.aboutAction, SIGNAL("activated()"), self.about)
-
 
         self.iface.addToolBarIcon(self.action)
         self.iface.addPluginToMenu("QuickWKT", self.action)
         self.iface.addPluginToMenu("QuickWKT", self.aboutAction)
 
         # create dialog
-        examples = """examples:\nPOINT(-5 10)\nLINESTRING(-0 0, 10 10, 20 0, 0 -20)\nPOLYGON((-0 0, 10 10, 10 -10, 0 0))\nPOLYGON ((35 10, 10 20, 15 40, 45 45, 35 10), (20 30, 35 35, 30 20, 20 30)) polygon with hole\nMULTIPOINT ((10 40), (40 30), (20 20), (30 10))"""
+        examples = """examples:\nPOINT(-5 10)\nLINESTRING(-0 0, 10 10, 20 0, 0 -20)\nPOLYGON((-0 0, 10 10, 10 -10, 0 0))\nPOLYGON ((35 10, 10 20, 15 40, 45 45, 35 10), (20 30, 35 35, 30 20, 20 30)) \npolygon with hole\nMULTIPOINT ((10 40), (40 30), (20 20), (30 10))"""
         self.dlg = QuickWKTDialog()
         self.dlg.wkt.setPlainText(examples)
 
-
     def unload(self):
         # Remove the plugin menu item and icon
-        self.iface.removePluginMenu("QuickWKT",self.action)
+        self.iface.removePluginMenu("QuickWKT", self.action)
         self.iface.removeToolBarIcon(self.action)
-
 
     def about(self):
         infoString = QString(QCoreApplication.translate('QuickWKT', "Python QuickWKT Plugin<br />This plugin creates a set of temporary layers and populates them with WKT features that you can paste in a dialog window.<br /><strong>All layers created by this plugins are temporary layers, all data will be lost when you quit QGIS.</strong><br />Author: Dr. Alessandro Pasotti (aka: elpaso)<br />Mail: <a href=\"mailto:info@itopen.it\">info@itopen.it</a><br />Web: <a href=\"http://www.itopen.it\">www.itopen.it</a>\n"))
-        QMessageBox.information(self.iface.mainWindow(), "About QuickWKT",infoString)
-
+        QMessageBox.information(self.iface.mainWindow(), "About QuickWKT", infoString)
 
     # run
+
     def quickwkt(self):
 
         # show the dialog
@@ -83,74 +83,99 @@ class QuickWKT:
             except Exception, e:
                 QMessageBox.information(self.iface.mainWindow(), QCoreApplication.translate('QuickWKT', "QuickWKT plugin error"), QCoreApplication.translate('QuickWKT', "There was an error with the service:<br /><strong>%1</strong>").arg(unicode(e)))
                 return
+
             # Refresh the map
             self.canvas.refresh()
             return
 
+    def createLayer(self, typeString, crs=None):
+        layer = QgsVectorLayer(typeString, "QuickWKT Layer %d" % self.layerNum, "memory")
+        self.layerNum += 1
+        if crs:
+            crs = QgsCoordinateReferenceSystem(crs, QgsCoordinateReferenceSystem.PostgisCrsId)
+        else:
+            crs = self.canvas.mapRenderer().destinationCrs()
+        layer.setCrs(crs)
+        # add attribute id, purely to make the features selectable from within attribute table
+        layer.dataProvider().addAttributes([QgsField("name", QVariant.String)])
+        QgsMapLayerRegistry.instance().addMapLayer(layer)
+        return layer
 
-    def createLayer(self, typeString):
-            layer = QgsVectorLayer(typeString, "QuickWKT "+typeString, "memory")
-            # TODO this should come from mapcanvas, not from project file
- #           p = QgsProject.instance()
- #           (proj4string,ok) = p.readEntry("SpatialRefSys","ProjectCRSProj4String")
- #           crs = QgsCoordinateReferenceSystem()
- #           crs.createFromProj4(proj4string)
- #           layer.setCrs(crs)
-            # add attribute id, purely to make the features selectable from within attribute table
-            layer.dataProvider().addAttributes([QgsField("name", QVariant.String)])
-            QgsMapLayerRegistry.instance().addMapLayer(layer)
-            return layer
+    def parseGeometryCollection(self, wkt):
+        #Cannot use split as there are commas in the geometry.
+        start = 20
+        bracketLevel = -1
+        for i in xrange(len(wkt)):
+            if wkt[i] == '(':
+                bracketLevel += 1
+            elif wkt[i] == ')':
+                bracketLevel -= 1
+            elif wkt[i] == ',' and bracketLevel == 0:
+                self.save_wkt(wkt[start:i])
+                start = i + 1
 
+        self.save_wkt(wkt[start:-1])
 
     # save wkt to file, wkt is in project's crs
     def save_wkt(self, wkt):
-
         # supported types as needed for layer creation
-        typeMap = { 0:"Point", 1:"LineString", 2:"Polygon" }
-        featuresByGType = {}
+        typeMap = {0: "Point", 1: "LineString", 2: "Polygon"}
+        newFeatures = {}
         errors = ""
-
-        # check all lines in text adn try to make geometry of it, collecting errors and features
+        regex = re.compile("([a-zA-Z]+)[\s]*(.*)")
+        # Each newline is a new object so clean the input of extra newlines
+        wkt = wkt.replace(",\n", ",")
+        # check all lines in text adn try to make geometry of it, collecting errors and featureS
         for wktLine in wkt.split('\n'):
-            try:
-                g = QgsGeometry.fromWkt(wktLine)
+            # try:
+                wktLine = wktLine.upper().replace("LINEARRING", "LINESTRING")
+                results = re.match(regex, wktLine)
+                wktLine = results.group(1) + " " + results.group(2)
+                qDebug("Attempting to save '%s'" % wktLine)
+                #EWKT support
+                srid = ""
+                if wktLine.startswith("SRID"):
+                    srid, wktLine = wktLine.split(";")  # SRID number
+                    srid = int(re.match(".*?(\d+)", srid).group(1))
+                    qDebug("SRID = '%d'" % srid)
+
+                if wktLine.startswith("GEOMETRYCOLLECTION ("):
+                    self.parseGeometryCollection(wktLine)
+                    continue
+
+                geom = QgsGeometry.fromWkt(wktLine)
+                if not geom:
+                    errors += ('-    "' + wktLine + '" is invalid\n')
+                    continue
+
                 f = QgsFeature()
-                f.setGeometry(g)
-                if g.type() in featuresByGType:
-                    featuresByGType.get(g.type()).append(f)
+                f.setGeometry(geom)
+                if geom.type() in newFeatures:
+                    newFeatures.get(geom.type()).append((f, srid))
                 else:
-                    featuresByGType[g.type()]=[f]
-            except:
-                errors+=('-    '+wktLine+'\n')
-        if len(errors)>0:
+                    newFeatures[geom.type()] = [(f, srid)]
+            # except:
+            #     errors += ('-    ' + wktLine + '\n')
+        if len(errors) > 0:
             # TODO either quit or succeed ignoring the errors
             infoString = QString(QCoreApplication.translate('QuickWKT', "These line(s) are not WKT or not a supported WKT type:\n" + errors + "Do you want to ignore those lines (OK) \nor Cancel the operation (Cancel)?"))
             res = QMessageBox.question(self.iface.mainWindow(), "Warning QuickWKT", infoString, QMessageBox.Ok | QMessageBox.Cancel)
             if res == QMessageBox.Cancel:
                 return
 
-        # create OR reuse a layer for every geometry type
-        for typ in featuresByGType.keys():
-            # it's possible that the user tried an exotic valid wkt which we cannot handle
-            if not typ in typeMap.keys():
-                infoString = "This type of WKT-geometry is not supported: " + typ
-                QMessageBox.information(self.iface.mainWindow(), "Error QuickWKT", infoString)
-            else:
-                layer = self.getLayer( 'QuickWKT_'+typeMap[typ])
-                if not layer or self.dlg.cbxnewlayer.isChecked():
-                    layer = self.createLayer( typeMap[typ] )
-                layer.dataProvider().addFeatures( featuresByGType.get(typ) )
+        for typ in newFeatures.keys():
+            for f in newFeatures.get(typ):
+                layer = self.createLayer(typeMap[typ], f[1])
+                layer.dataProvider().addFeatures([f[0]])
                 layer.updateExtents()
                 layer.reload()
                 self.canvas.refresh()
-
 
     def getLayer(self, layerId):
         for layer in QgsMapLayerRegistry.instance().mapLayers().values():
             if  layer.id().startsWith(layerId):
                 return layer
         return None
-
 
 if __name__ == "__main__":
     pass

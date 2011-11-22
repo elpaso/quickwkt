@@ -14,6 +14,7 @@ try:
 except AttributeError:
     _fromUtf8 = lambda s: s
 
+
 class Ui_QuickWKT(object):
     def setupUi(self, QuickWKT):
         QuickWKT.setObjectName(_fromUtf8("QuickWKT"))
@@ -31,7 +32,7 @@ class Ui_QuickWKT(object):
         self.verticalLayout.addWidget(self.cbxnewlayer)
         self.buttonBox = QtGui.QDialogButtonBox(QuickWKT)
         self.buttonBox.setOrientation(QtCore.Qt.Horizontal)
-        self.buttonBox.setStandardButtons(QtGui.QDialogButtonBox.Cancel|QtGui.QDialogButtonBox.Ok)
+        self.buttonBox.setStandardButtons(QtGui.QDialogButtonBox.Cancel | QtGui.QDialogButtonBox.Ok)
         self.buttonBox.setObjectName(_fromUtf8("buttonBox"))
         self.verticalLayout.addWidget(self.buttonBox)
 
@@ -44,4 +45,3 @@ class Ui_QuickWKT(object):
         QuickWKT.setWindowTitle(QtGui.QApplication.translate("QuickWKT", "QuickWKT", None, QtGui.QApplication.UnicodeUTF8))
         self.addressLabel.setText(QtGui.QApplication.translate("QuickWKT", "Enter WKT:", None, QtGui.QApplication.UnicodeUTF8))
         self.cbxnewlayer.setText(QtGui.QApplication.translate("QuickWKT", "Create new layer for every geometry type", None, QtGui.QApplication.UnicodeUTF8))
-
