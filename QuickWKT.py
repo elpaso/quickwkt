@@ -57,7 +57,8 @@ class QuickWKT:
         self.iface.addPluginToMenu("QuickWKT", self.aboutAction)
 
         # create dialog
-        examples = """examples:\nPOINT(-5 10)\nLINESTRING(-0 0, 10 10, 20 0, 0 -20)\nPOLYGON((-0 0, 10 10, 10 -10, 0 0))\nPOLYGON ((35 10, 10 20, 15 40, 45 45, 35 10), (20 30, 35 35, 30 20, 20 30)) \npolygon with hole\nMULTIPOINT ((10 40), (40 30), (20 20), (30 10))"""
+        # examples = """examples:\nPOINT(-5 10)\nLINESTRING(-0 0, 10 10, 20 0, 0 -20)\nPOLYGON((-0 0, 10 10, 10 -10, 0 0))\nPOLYGON ((35 10, 10 20, 15 40, 45 45, 35 10), (20 30, 35 35, 30 20, 20 30)) \npolygon with hole\nMULTIPOINT ((10 40), (40 30), (20 20), (30 10))"""
+        examples = ""
         self.dlg = QuickWKTDialog()
         self.dlg.wkt.setPlainText(examples)
 
@@ -94,7 +95,7 @@ class QuickWKT:
             return
 
     def createLayer(self, typeString, crs=None):
-        layer = QgsVectorLayer(typeString, "QuickWKT Layer %d" % self.layerNum, "memory")
+        layer = QgsVectorLayer(typeString, "QuickWKT %d" % self.layerNum, "memory")
         self.layerNum += 1
         if crs:
             crs = QgsCoordinateReferenceSystem(crs, QgsCoordinateReferenceSystem.PostgisCrsId)
