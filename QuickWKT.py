@@ -23,6 +23,7 @@ from PyQt4.QtGui import *
 from qgis.core import *
 
 import re
+import binascii
 
 # Initialize Qt resources from file resources.py
 # import resources
@@ -70,18 +71,22 @@ class QuickWKT:
         QMessageBox.information(self.iface.mainWindow(), "About QuickWKT", infoString)
 
     # run
-
     def quickwkt(self):
-
         # show the dialog
         self.dlg.show()
         result = self.dlg.exec_()
         # See if OK was pressed
         if result == 1 and self.dlg.wkt.toPlainText():
+            text = unicode(self.dlg.wkt.toPlainText())
             try:
-                self.save_wkt(unicode(self.dlg.wkt.toPlainText()))
+                if "(" in text:
+                    self.save_wkt(text)
+                else:
+                    self.save_wkb(text)
             except Exception, e:
-                QMessageBox.information(self.iface.mainWindow(), QCoreApplication.translate('QuickWKT', "QuickWKT plugin error"), QCoreApplication.translate('QuickWKT', "There was an error with the service:<br /><strong>%1</strong>").arg(unicode(e)))
+                QMessageBox.information(self.iface.mainWindow(), \
+                QCoreApplication.translate('QuickWKT', "QuickWKT plugin error"), \
+                QCoreApplication.translate('QuickWKT', "There was an error with the service:<br /><strong>%1</strong>").arg(unicode(e)))
                 return
 
             # Refresh the map
@@ -116,6 +121,52 @@ class QuickWKT:
 
         self.save_wkt(wkt[start:-1])
 
+    def decodeBinary(self, wkb):
+        """Decode the binary wkb and return as a hex string"""
+        value = binascii.a2b_hex(wkb)
+        value = value[::-1]
+        value = binascii.b2a_hex(value)
+        return value
+
+    def encodeBinary(self, value):
+        wkb = binascii.a2b_hex("%08x" % value)
+        wkb = wkb[::-1]
+        wkb = binascii.b2a_hex(wkb)
+        return wkb
+
+    def saveFeatures(self, layer, features):
+        layer.dataProvider().addFeatures(features)
+        layer.updateExtents()
+        layer.reload()
+        self.canvas.refresh()
+
+    def save_wkb(self, wkb):
+        SRID_FLAG = 0x20000000
+
+        typeMap = {0: "Point", 1: "LineString", 2: "Polygon"}
+        srid = ""
+        qDebug("Decoding binary: " + wkb)
+
+        geomType = int("0x" + self.decodeBinary(wkb[2:10]), 0)
+        if geomType & SRID_FLAG:
+            srid = int("0x" + self.decodeBinary(wkb[10:18]), 0)
+            # String the srid from the wkb string
+            wkb = wkb[:2] + self.encodeBinary(geomType ^ SRID_FLAG) + wkb[18:]
+
+        geom = QgsGeometry()
+        geom.fromWkb(binascii.a2b_hex(wkb))
+        if not geom:
+            qDebug("Geometry not recognised")
+        qDebug("As wkt = " + geom.exportToWkt())
+        qDebug("Geom type = " + str(geom.type()))
+        if not geom.exportToWkt():
+            qDebug("Geometry creation failed")
+        f = QgsFeature()
+        f.setGeometry(geom)
+        layer = self.createLayer(typeMap[geom.type()], srid)
+
+        self.saveFeatures(layer, [f])
+
     # save wkt to file, wkt is in project's crs
     def save_wkt(self, wkt):
         # supported types as needed for layer creation
@@ -123,11 +174,11 @@ class QuickWKT:
         newFeatures = {}
         errors = ""
         regex = re.compile("([a-zA-Z]+)[\s]*(.*)")
-        # Each newline is a new object so clean the input of extra newlines
+        # Clean newlines where there is not a new object
         wkt = wkt.replace(",\n", ",")
-        # check all lines in text adn try to make geometry of it, collecting errors and featureS
+        # check all lines in text and try to make geometry of it, collecting errors and features
         for wktLine in wkt.split('\n'):
-            # try:
+            try:
                 wktLine = wktLine.upper().replace("LINEARRING", "LINESTRING")
                 results = re.match(regex, wktLine)
                 wktLine = results.group(1) + " " + results.group(2)
@@ -139,6 +190,7 @@ class QuickWKT:
                     srid = int(re.match(".*?(\d+)", srid).group(1))
                     qDebug("SRID = '%d'" % srid)
 
+                #Geometry Collections
                 if wktLine.startswith("GEOMETRYCOLLECTION ("):
                     self.parseGeometryCollection(wktLine)
                     continue
@@ -154,8 +206,8 @@ class QuickWKT:
                     newFeatures.get(geom.type()).append((f, srid))
                 else:
                     newFeatures[geom.type()] = [(f, srid)]
-            # except:
-            #     errors += ('-    ' + wktLine + '\n')
+            except:
+                errors += ('-    ' + wktLine + '\n')
         if len(errors) > 0:
             # TODO either quit or succeed ignoring the errors
             infoString = QString(QCoreApplication.translate('QuickWKT', "These line(s) are not WKT or not a supported WKT type:\n" + errors + "Do you want to ignore those lines (OK) \nor Cancel the operation (Cancel)?"))
@@ -164,8 +216,11 @@ class QuickWKT:
                 return
 
         for typ in newFeatures.keys():
+            if self.dlg.cbxnewlayer.isChecked():
+                layer = self.createLayer(typeMap[typ], newFeatures.get(typ)[0][1])
             for f in newFeatures.get(typ):
-                layer = self.createLayer(typeMap[typ], f[1])
+                if not self.dlg.cbxnewlayer.isChecked():
+                    layer = self.createLayer(typeMap[typ], f[1])
                 layer.dataProvider().addFeatures([f[0]])
                 layer.updateExtents()
                 layer.reload()

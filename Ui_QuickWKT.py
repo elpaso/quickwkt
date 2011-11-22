@@ -44,4 +44,4 @@ class Ui_QuickWKT(object):
     def retranslateUi(self, QuickWKT):
         QuickWKT.setWindowTitle(QtGui.QApplication.translate("QuickWKT", "QuickWKT", None, QtGui.QApplication.UnicodeUTF8))
         self.addressLabel.setText(QtGui.QApplication.translate("QuickWKT", "Enter WKT:", None, QtGui.QApplication.UnicodeUTF8))
-        self.cbxnewlayer.setText(QtGui.QApplication.translate("QuickWKT", "Create new layer for every geometry type", None, QtGui.QApplication.UnicodeUTF8))
+        self.cbxnewlayer.setText(QtGui.QApplication.translate("QuickWKT", "Create one layer per type for multiline input.", None, QtGui.QApplication.UnicodeUTF8))
