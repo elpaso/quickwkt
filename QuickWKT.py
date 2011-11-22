@@ -155,8 +155,6 @@ class QuickWKT:
 
         geom = QgsGeometry()
         geom.fromWkb(binascii.a2b_hex(wkb))
-        if not geom:
-            qDebug("Geometry not recognised")
         qDebug("As wkt = " + geom.exportToWkt())
         qDebug("Geom type = " + str(geom.type()))
         if not geom.exportToWkt():
