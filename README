@@ -22,6 +22,7 @@ Version 1.5
 - create only layer type if needed: if you only paste a wkt of a point, then only a point layer is created
 - lines which cannot be parsed combine to a warning
 - user can either choose if the layers should be reused, OR on every use of plugin should create new layers
+- addition of README
 
 Version 1.0
 -----------
