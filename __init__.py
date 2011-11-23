@@ -23,9 +23,9 @@ def name():
 def description():
   return "Quick WKT viewer"
 def version():
-  return "Version 1.0"
+  return "Version 1.5"
 def qgisMinimumVersion():
-  return "1.5"
+  return "1.0"
 def classFactory(iface):
   # load GeoCoding class from file GeoCoding
   from QuickWKT import QuickWKT
