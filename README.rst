@@ -18,17 +18,17 @@ Contributing Autors:
 * Richard Duivenvoorde
 * Ryan Lewis
 
+License
+-------
+
+GPLv3
+
+
 Version 1.6
 -----------
 
 - add support for hexEWKB
 - add support for linearring and geometry collections in WKT format
-
-
-License
--------
-
-GPLv3
 
 
 Version 1.5
