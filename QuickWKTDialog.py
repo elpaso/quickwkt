@@ -20,6 +20,8 @@ email                : info@itopen.it
 from PyQt4 import QtCore, QtGui
 from Ui_QuickWKT import Ui_QuickWKT
 # create the dialog for GeoCoding
+
+
 class QuickWKTDialog(QtGui.QDialog, Ui_QuickWKT ):
   def __init__(self):
     QtGui.QDialog.__init__(self)

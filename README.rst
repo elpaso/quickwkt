@@ -13,7 +13,16 @@ Plugin: http://plugins.qgis.org/plugins/QuickWKT/
 
 Original Author: Alessandro Pasotti
 
-Contributing Autors: Richard Duivenvoorde
+Contributing Autors: 
+ 
+* Richard Duivenvoorde
+* Ryan Lewis
+
+Version 1.6
+-----------
+
+- add support for hexEWKB
+- add support for linearring and geometry collections in WKT format
 
 
 License

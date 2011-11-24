@@ -13,7 +13,7 @@ clean:
 	rm -f ../QuickWKT.zip
 	rm -f Ui_QuickWKT.py resources.py
 
-package: clean
+package:
 	cd .. && find QuickWKT/  -print|grep -v Make | grep -v zip | grep -v .git | zip QuickWKT.zip -@
 
 localrepo:
