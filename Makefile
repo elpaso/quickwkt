@@ -4,9 +4,20 @@ all: clean compile package
 
 install: copy2qgis
 
-compile:
-	pyuic4 -o Ui_QuickWKT.py Ui_QuickWKT.ui
-	pyrcc4 -o resources.py resources.qrc
+PY_FILES = QuickWKT.py QuickWKTDialog.py __init__.py
+EXTRAS = about_icon.png quickwkt_icon.png
+UI_FILES = Ui_QuickWKT.py
+                                                                                                                                                                                                                                                                                                                                                                                                               RESOURCE_FILES = resources.py
+
+compile: $(UI_FILES) $(RESOURCE_FILES)
+
+%.py : %.qrc
+	pyrcc4 -o $@  $<
+
+%.py : %.ui
+	pyuic4 -o $@ $<
+
+
 
 clean:
 	find ./ -name "*.pyc" -exec rm -rf \{\} \;

@@ -26,7 +26,7 @@ def description():
     return "Quick WKT viewer"
 
 def version():
-    return "1.6"
+    return "1.7"
 
 def qgisMinimumVersion():
     return "1.5"
@@ -48,4 +48,6 @@ def repository():
 def tracker():
     return 'https://github.com/elpaso/quickwkt/issues'
 
+def icon():
+    return 'quickwkt_icon.png'
 

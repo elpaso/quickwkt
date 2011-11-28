@@ -26,7 +26,7 @@ import re
 import binascii
 
 # Initialize Qt resources from file resources.py
-# import resources
+import resources
 # Import the code for the dialog
 from QuickWKTDialog import QuickWKTDialog
 
@@ -57,7 +57,7 @@ class QuickWKT:
         self.iface.addPluginToMenu("QuickWKT", self.aboutAction)
 
         # create dialog
-        # examples = """examples:\nPOINT(-5 10)\nLINESTRING(-0 0, 10 10, 20 0, 0 -20)\nPOLYGON((-0 0, 10 10, 10 -10, 0 0))\nPOLYGON ((35 10, 10 20, 15 40, 45 45, 35 10), (20 30, 35 35, 30 20, 20 30)) \npolygon with hole\nMULTIPOINT ((10 40), (40 30), (20 20), (30 10))"""
+        #examples = """examples:\nPOINT(-5 10)\nLINESTRING(-0 0, 10 10, 20 0, 0 -20)\nPOLYGON((-0 0, 10 10, 10 -10, 0 0))\nPOLYGON ((35 10, 10 20, 15 40, 45 45, 35 10), (20 30, 35 35, 30 20, 20 30)) \npolygon with hole\nMULTIPOINT ((10 40), (40 30), (20 20), (30 10))"""
         examples = ""
         self.dlg = QuickWKTDialog()
         self.dlg.wkt.setPlainText(examples)
