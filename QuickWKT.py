@@ -231,5 +231,6 @@ class QuickWKT:
                 return layer
         return None
 
+
 if __name__ == "__main__":
     pass

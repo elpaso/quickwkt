@@ -15,21 +15,21 @@
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
    <item>
-    <widget class="QLabel" name="addressLabel">
-     <property name="text">
-      <string>Enter WKT:</string>
-     </property>
-    </widget>
+    <layout class="QHBoxLayout" name="horizontalLayout">
+     <item>
+      <widget class="QLabel" name="addressLabel">
+       <property name="text">
+        <string>Enter (E)WKT or WKB or load an example</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QComboBox" name="exampleComboBox"/>
+     </item>
+    </layout>
    </item>
    <item>
     <widget class="QPlainTextEdit" name="wkt"/>
-   </item>
-   <item>
-    <widget class="QCheckBox" name="cbxnewlayer">
-     <property name="text">
-      <string>Create new layer for every geometry type</string>
-     </property>
-    </widget>
    </item>
    <item>
     <widget class="QDialogButtonBox" name="buttonBox">
@@ -38,6 +38,13 @@
      </property>
      <property name="standardButtons">
       <set>QDialogButtonBox::Cancel|QDialogButtonBox::Ok</set>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="QCheckBox" name="cbxnewlayer">
+     <property name="text">
+      <string>Create new layer for every geometry type</string>
      </property>
     </widget>
    </item>

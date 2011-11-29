@@ -23,10 +23,10 @@ def name():
     return "QuickWKT"
 
 def description():
-    return "Quick WKT viewer"
+    return "Quick WKT/WKB viewer, this Qgis Plugin opens a dialog where the user can paste (E)WKT and WKB code and see it on the map. Pasted data are stored in a temporay (memory) layer and are completely lost when the user quits QGIS."
 
 def version():
-    return "1.7"
+    return "1.8"
 
 def qgisMinimumVersion():
     return "1.5"

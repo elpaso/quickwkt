@@ -13,8 +13,8 @@ Plugin: http://plugins.qgis.org/plugins/QuickWKT/
 
 Original Author: Alessandro Pasotti
 
-Contributing Autors: 
- 
+Contributing Autors:
+
 * Richard Duivenvoorde
 * Ryan Lewis
 
@@ -23,6 +23,16 @@ License
 
 GPLv3
 
+
+Version 1.8
+-----------
+
+- added example combo
+
+Version 1.7
+-----------
+
+- fixed missing icon
 
 Version 1.6
 -----------
