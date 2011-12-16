@@ -1,6 +1,8 @@
 # Makefile for a PyQGIS plugin
 
-all: clean compile package
+all: compile
+
+dist: package
 
 install: copy2qgis
 
