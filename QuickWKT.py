@@ -104,7 +104,7 @@ class QuickWKT:
         layer.setCrs(crs)
         # add attribute id, purely to make the features selectable from within attribute table
         layer.dataProvider().addAttributes([QgsField("name", QVariant.String)])
-        QgsMapLayerRegistry.instance().addMapLayer(layer)
+        QgsMapLayerRegistry.instance().addMapLayers([layer])
         return layer
 
     def parseGeometryCollection(self, wkt):
