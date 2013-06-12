@@ -87,7 +87,7 @@ class QuickWKT:
             except Exception, e:
                 QMessageBox.information(self.iface.mainWindow(), \
                 QCoreApplication.translate('QuickWKT', "QuickWKT plugin error"), \
-                QCoreApplication.translate('QuickWKT', "There was an error with the service:<br /><strong>%1</strong>").arg(unicode(e)))
+                QCoreApplication.translate('QuickWKT', "There was an error with the service:<br /><strong>{0}</strong>").format(unicode(e)))
                 return
 
             # Refresh the map
@@ -104,7 +104,7 @@ class QuickWKT:
         layer.setCrs(crs)
         # add attribute id, purely to make the features selectable from within attribute table
         layer.dataProvider().addAttributes([QgsField("name", QVariant.String)])
-        QgsMapLayerRegistry.instance().addMapLayers([layer])
+        QgsMapLayerRegistry.instance().addMapLayer(layer)
         return layer
 
     def parseGeometryCollection(self, wkt):
@@ -209,7 +209,7 @@ class QuickWKT:
                 errors += ('-    ' + wktLine + '\n')
         if len(errors) > 0:
             # TODO either quit or succeed ignoring the errors
-            infoString = QString(QCoreApplication.translate('QuickWKT', "These line(s) are not WKT or not a supported WKT type:\n" + errors + "Do you want to ignore those lines (OK) \nor Cancel the operation (Cancel)?"))
+            infoString = QCoreApplication.translate('QuickWKT', "These line(s) are not WKT or not a supported WKT type:\n" + errors + "Do you want to ignore those lines (OK) \nor Cancel the operation (Cancel)?")
             res = QMessageBox.question(self.iface.mainWindow(), "Warning QuickWKT", infoString, QMessageBox.Ok | QMessageBox.Cancel)
             if res == QMessageBox.Cancel:
                 return
