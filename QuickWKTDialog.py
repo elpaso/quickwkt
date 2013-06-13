@@ -26,7 +26,7 @@ EXAMPLES = {
         '' : '',
         'POINT (WKT)' : 'POINT (30 10)',
         'LINESTRING (WKT)' : 'LINESTRING (30 10, 10 30, 40 40)',
-        'POLYGON (WKT)' : 'POLYGON ((30 10, 10 20, 20 40, 40 40, 30 10)',
+        'POLYGON (WKT)' : 'POLYGON ((30 10, 10 20, 20 40, 40 40, 30 10))',
         'POINT (EWKT)' : 'SRID=4326;POINT (30 10)',
         'LINESTRING (EWKT)' : 'SRID=4326;LINESTRING (30 10, 10 30, 40 40)',
         'POLYGON (EWKT)' : 'SRID=4326;POLYGON ((30 10, 10 20, 20 40, 40 40, 30 10))',
@@ -42,7 +42,7 @@ class QuickWKTDialog(QtGui.QDialog, Ui_QuickWKT ):
         self.setupUi(self)
         self.exampleComboBox.addItems(EXAMPLES.keys())
 
-    @QtCore.pyqtSlot(QtCore.QString)
+    @QtCore.pyqtSlot(str)
     def on_exampleComboBox_currentIndexChanged(self, index):
         """
         Set and loads examples
