@@ -174,7 +174,8 @@ class QuickWKT:
         errors = ""
         regex = re.compile("([a-zA-Z]+)[\s]*(.*)")
         # Clean newlines where there is not a new object
-        wkt = wkt.replace(",\n", ",")
+        wkt = re.sub('\n *(?![PLMC])', ' ', wkt)
+        qDebug("wkt: " + wkt);
         # check all lines in text and try to make geometry of it, collecting errors and features
         for wktLine in wkt.split('\n'):
             try:
