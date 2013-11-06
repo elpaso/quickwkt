@@ -19,35 +19,8 @@ email                : info@itopen.it
  This script initializes the plugin, making it known to QGIS.
 """
 
-def name():
-    return "QuickWKT"
-
-def description():
-    return "Quick WKT/WKB viewer, this Qgis Plugin opens a dialog where the user can paste (E)WKT and WKB code and see it on the map. Pasted data are stored in a temporay (memory) layer and are completely lost when the user quits QGIS."
-
-def version():
-    return "1.8"
-
-def qgisMinimumVersion():
-    return "1.5"
 
 def classFactory(iface):
     # load GeoCoding class from file GeoCoding
     from QuickWKT import QuickWKT
     return QuickWKT(iface)
-
-def experimental():
-    return False
-
-def homepage():
-    return 'http://www.itopen.it/2010/10/21/wkt-on-the-fly-qgis-plugin/'
-
-def repository():
-    return 'https://github.com/elpaso/quickwkt'
-
-def tracker():
-    return 'https://github.com/elpaso/quickwkt/issues'
-
-def icon():
-    return 'quickwkt_icon.png'
-

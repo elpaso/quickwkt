@@ -3,8 +3,8 @@
 /***************************************************************************
 Name                 : QuickWKT
 Description          : QuickWKT
-Date                 : 11/Oct/2010
-copyright            : (C) 2010 by ItOpen
+Date                 : 11/Sept/2013
+copyright            : (C) 2013 by ItOpen
 email                : info@itopen.it
  ***************************************************************************/
 
@@ -62,13 +62,24 @@ class QuickWKT:
         self.dlg = QuickWKTDialog()
         self.dlg.wkt.setPlainText(examples)
 
+        #import pdb
+        # These lines allow you to set a breakpoint in the app
+        #pyqtRemoveInputHook()
+        #pdb.set_trace()
+
+        QObject.connect(self.dlg.clearButton, SIGNAL("clicked()"), self.clearButtonClicked)
+
+
+    def clearButtonClicked(self):
+        self.dlg.wkt.setPlainText('')
+
     def unload(self):
         # Remove the plugin menu item and icon
         self.iface.removePluginMenu("QuickWKT", self.action)
         self.iface.removeToolBarIcon(self.action)
 
     def about(self):
-        infoString = QString(QCoreApplication.translate('QuickWKT', "Python QuickWKT Plugin<br />This plugin creates a set of temporary layers and populates them with WKT features that you can paste in a dialog window.<br /><strong>All layers created by this plugins are temporary layers, all data will be lost when you quit QGIS.</strong><br />Author: Dr. Alessandro Pasotti (aka: elpaso)<br />Mail: <a href=\"mailto:info@itopen.it\">info@itopen.it</a><br />Web: <a href=\"http://www.itopen.it\">www.itopen.it</a>\n"))
+        infoString = QCoreApplication.translate('QuickWKT', "Python QuickWKT Plugin<br />This plugin creates a set of temporary layers and populates them with WKT features that you can paste in a dialog window.<br /><strong>All layers created by this plugins are temporary layers, all data will be lost when you quit QGIS.</strong><br />Author: Alessandro Pasotti (aka: elpaso)<br />Mail: <a href=\"mailto:info@itopen.it\">info@itopen.it</a><br />Web: <a href=\"http://www.itopen.it\">www.itopen.it</a>\n")
         QMessageBox.information(self.iface.mainWindow(), "About QuickWKT", infoString)
 
     # run
