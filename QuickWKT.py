@@ -4,8 +4,8 @@
 Name                 : QuickWKT
 Description          : QuickWKT
 Date                 : 11/Sept/2013
-copyright            : (C) 2013 by ItOpen
-email                : info@itopen.it
+copyright            : (C) 2013-2015 by ItOpen
+email                : elpaso@itopen.it
  ***************************************************************************/
 
 /***************************************************************************
@@ -39,6 +39,9 @@ class QuickWKT:
         self.canvas = iface.mapCanvas()
         # TODO: remove: unused
         self.layerNum = 1
+        iface.show_wkt = self.save_wkt
+        iface.show_wkb = self.save_wkb
+        iface.show_geometry = self.save_geometry
 
     def initGui(self):
         # Create action that will start plugin
@@ -49,24 +52,14 @@ class QuickWKT:
 
         # Add toolbar button and menu item
 
-        self.aboutAction = QAction(QIcon(":/plugins/QuickWKT/about_icon.png"), QCoreApplication.translate('QuickWKT', "&About"), self.iface.mainWindow())
-        QObject.connect(self.aboutAction, SIGNAL("activated()"), self.about)
-
         self.iface.addToolBarIcon(self.action)
         self.iface.addPluginToMenu("QuickWKT", self.action)
-        self.iface.addPluginToMenu("QuickWKT", self.aboutAction)
 
         # create dialog
-        #examples = """examples:\nPOINT(-5 10)\nLINESTRING(-0 0, 10 10, 20 0, 0 -20)\nPOLYGON((-0 0, 10 10, 10 -10, 0 0))\nPOLYGON ((35 10, 10 20, 15 40, 45 45, 35 10), (20 30, 35 35, 30 20, 20 30)) \npolygon with hole\nMULTIPOINT ((10 40), (40 30), (20 20), (30 10))"""
         examples = ""
         self.dlg = QuickWKTDialog()
         self.dlg.wkt.setPlainText(examples)
         self.dlg.layerTitle.setText('QuickWKT')
-
-        #import pdb
-        # These lines allow you to set a breakpoint in the app
-        #pyqtRemoveInputHook()
-        #pdb.set_trace()
 
         QObject.connect(self.dlg.clearButton, SIGNAL("clicked()"), self.clearButtonClicked)
 
@@ -79,14 +72,11 @@ class QuickWKT:
         self.iface.removePluginMenu("QuickWKT", self.action)
         self.iface.removeToolBarIcon(self.action)
 
-    def about(self):
-        infoString = QCoreApplication.translate('QuickWKT', "Python QuickWKT Plugin<br />This plugin creates a set of temporary layers and populates them with WKT features that you can paste in a dialog window.<br /><strong>All layers created by this plugins are temporary layers, all data will be lost when you quit QGIS.</strong><br />Author: Alessandro Pasotti (aka: elpaso)<br />Mail: <a href=\"mailto:info@itopen.it\">info@itopen.it</a><br />Web: <a href=\"http://www.itopen.it\">www.itopen.it</a>\n")
-        QMessageBox.information(self.iface.mainWindow(), "About QuickWKT", infoString)
-
-    # run
+     # run
     def quickwkt(self):
         # show the dialog
         self.dlg.show()
+        self.dlg.adjustSize()
         result = self.dlg.exec_()
         # See if OK was pressed
         if result == 1 and self.dlg.wkt.toPlainText():
@@ -107,18 +97,27 @@ class QuickWKT:
             self.canvas.refresh()
             return
 
-    def createLayer(self, typeString, layerTitle, crs=None):
+    def createLayer(self, typeString, layerTitle=None, crs=None):
+        # Automatic layer title in case is None
+        if not layerTitle:
+            layerTitle = 'QuickWKT %s' % typeString
         if crs:
             crs = QgsCoordinateReferenceSystem(crs, QgsCoordinateReferenceSystem.PostgisCrsId)
         else:
             crs = self.canvas.mapRenderer().destinationCrs()
 
         typeString = "%s?crs=%s" % (typeString, crs.authid())
+
         layer = QgsVectorLayer(typeString, layerTitle, "memory")
 
         #layer.setCrs(crs)
         # add attribute id, purely to make the features selectable from within attribute table
         layer.dataProvider().addAttributes([QgsField("name", QVariant.String)])
+        # First search for a layer with this name and type:
+        registry = QgsMapLayerRegistry.instance()
+        for l in registry.mapLayersByName(layerTitle):
+            if l.dataProvider().dataSourceUri() == layer.dataProvider().dataSourceUri():
+                return l
         QgsMapLayerRegistry.instance().addMapLayer(layer)
         return layer
 
@@ -156,7 +155,10 @@ class QuickWKT:
         layer.reload()
         self.canvas.refresh()
 
-    def save_wkb(self, wkb, layerTitle):
+    def save_wkb(self, wkb, layerTitle=None):
+        """Shows the WKB geometry in the map canvas, optionally specify a
+        layer name otherwise it will be automatically created
+        Returns the layer where features has been added (or None)."""
         SRID_FLAG = 0x20000000
 
         typeMap = {0: "Point", 1: "LineString", 2: "Polygon"}
@@ -175,14 +177,19 @@ class QuickWKT:
         qDebug("Geom type = " + str(geom.type()))
         if not geom.exportToWkt():
             qDebug("Geometry creation failed")
+            return None
         f = QgsFeature()
         f.setGeometry(geom)
         layer = self.createLayer(typeMap[geom.type()], layerTitle, srid)
 
         self.saveFeatures(layer, [f])
+        return layer
 
     # save wkt to file, wkt is in project's crs
-    def save_wkt(self, wkt, layerTitle):
+    def save_wkt(self, wkt, layerTitle=None):
+        """Shows the WKT geometry in the map canvas, optionally specify a
+        layer name otherwise it will be automatically created.
+        Returns the layer where features has been added (or None)."""
         # supported types as needed for layer creation
         typeMap = {0: "Point", 1: "LineString", 2: "Polygon"}
         newFeatures = {}
@@ -232,6 +239,7 @@ class QuickWKT:
             if res == QMessageBox.Cancel:
                 return
 
+        layer = None
         for typ in newFeatures.keys():
             if self.dlg.cbxnewlayer.isChecked():
                 # TODO: remove: unused
@@ -243,7 +251,21 @@ class QuickWKT:
                 layer.dataProvider().addFeatures([f[0]])
                 layer.updateExtents()
                 layer.reload()
+                layer.setCacheImage(None)
                 self.canvas.refresh()
+        return layer
+
+
+    def save_geometry(self, geometry, layerTitle=None):
+        """Shows the QgsGeometry in the map canvas, optionally specify a
+        layer name otherwise it will be automatically created.
+        Returns the layer where features has been added (or None)."""
+        if isinstance(geometry, QgsGeometry):
+            return self.save_wkt(geometry.exportToWkt(), layerTitle)
+        else:
+            print "Error: this is not an instance of QgsGeometry"
+            return None
+        
 
     def getLayer(self, layerId):
         for layer in QgsMapLayerRegistry.instance().mapLayers().values():

@@ -2,5 +2,6 @@
   <qresource prefix="/plugins/QuickWKT" >
     <file>quickwkt_icon.png</file>
     <file>about_icon.png</file>
+    <file>paypal_icon.png</file>
   </qresource>
 </RCC>

@@ -21,7 +21,44 @@ Contributing Autors:
 License
 -------
 
-GPLv3
+
+Version 2.5
+-----------
+
+- iface.show_* now returns the layer
+
+Version 2.4
+------------
+
+- Changed homepage URL, fixed window size and removed about dialog
+
+Version 2.3
+-----------
+
+- Added utility show_wkt and show_wkb show_geometry methods to iface
+
+
+Version 2.2
+-----------
+
+- Fix #15: Trim input WKT text
+- Fix #17: feature request: allow writing layer name in the input dialog
+ 
+Version 2.1
+-----------
+
+- Clear button
+- Fix #8 (multiline WKT)
+
+Version 2.0
+-------------
+
+- QGIS 2.0.x compatible version
+    
+Version 1.9
+-----------
+ 
+- added clear button
 
 
 Version 1.8
