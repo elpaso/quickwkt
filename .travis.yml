@@ -14,3 +14,5 @@ install:
     - sleep 10
 script:
     - docker exec -it qgis-desktop sh -c "qgis_testrunner.sh QuickWKT.tests.test_Plugin"
+
+    
