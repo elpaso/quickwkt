@@ -1,0 +1,16 @@
+sudo: required
+addons:
+  hosts:
+    - boundless-test
+services:
+    - docker
+before_install:
+    - pushd .
+    - cd qgis-desktop-docker && docker build -t qgis-desktop .
+    - popd
+install:
+    - echo ${TRAVIS_BUILD_DIR}
+    - docker run -d --name qgis-desktop -v ${TRAVIS_BUILD_DIR}:/tests_directory -e DISPLAY=:99 qgis-desktop
+    - sleep 10
+script:
+    - docker exec -it qgis-desktop sh -c "qgis_testrunner.sh QuickWKT.tests.test_Plugin"

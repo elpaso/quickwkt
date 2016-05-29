@@ -1,0 +1,2 @@
+deb http://qgis.org/debian-nightly-release trusty main
+deb-src http://qgis.org/debian-nightly-release trusty main
