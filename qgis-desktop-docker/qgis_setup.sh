@@ -1,8 +1,6 @@
 #!/bin/bash
 # Setup QGIS
 # - disable tips
-# - setup the plugin
-# - install the plugin
 # - enable the plugin
 
 PLUGIN_NAME=$1
@@ -26,17 +24,6 @@ printf "[Qgis]\n" >> $CONF_FILE
 SHOW_TIPS=`qgis --help 2>&1 | head -2 | grep 'QGIS - ' | perl -npe 'chomp; s/QGIS - (\d+)\.(\d+).*/showTips\1\2=false/'`
 printf "$SHOW_TIPS\n" >> $CONF_FILE
 
-
-# Install plugin
-# pushd .
-# cd /tests_directory
-# paver setup
-# paver install
-# popd
-
-
 # Enable plugin
 printf '[PythonPlugins]\n' >> $CONF_FILE
 printf "${PLUGIN_NAME}=true\n" >> $CONF_FILE
-
-ln -s /tests_directory $PLUGIN_FOLDER/$PLUGIN_NAME

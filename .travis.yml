@@ -12,6 +12,11 @@ install:
     - echo ${TRAVIS_BUILD_DIR}
     - docker run -d --name qgis-desktop -v ${TRAVIS_BUILD_DIR}:/tests_directory -e DISPLAY=:99 qgis-desktop
     - sleep 10
+    # Setup qgis and enable the plugin
     - docker exec -it qgis-desktop sh -c "qgis_setup.sh QuickWKT"
+    # If needd additional steps (for example make or paver setup, place it here)
+    # Link the plugin
+    - docker exec -it qgis-desktop sh -c "ln -s /tests_directory /root/.qgis2/python/plugins/QuickWKT"
+
 script:
     - docker exec -it qgis-desktop sh -c "qgis_testrunner.sh QuickWKT.tests.test_Plugin"
