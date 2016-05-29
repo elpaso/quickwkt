@@ -38,6 +38,8 @@ RUN chmod +x /usr/bin/qgis_testrunner.sh
 ADD qgis_setup.sh /usr/bin/qgis_setup.sh
 RUN chmod +x /usr/bin/qgis_setup.sh
 
+# Monkey patch
+ADD startup.py /root/.qgis2/python/startup.py
 
 # Add start script
 ADD supervisord.conf /etc/supervisor/
