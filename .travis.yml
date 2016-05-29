@@ -1,7 +1,3 @@
-sudo: required
-addons:
-  hosts:
-    - boundless-test
 services:
     - docker
 before_install:
