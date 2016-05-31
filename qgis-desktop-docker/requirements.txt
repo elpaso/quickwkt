@@ -1,4 +1,0 @@
-pep8
-pexpect
-subprocess32
-capturer
