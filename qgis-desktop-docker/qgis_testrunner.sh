@@ -7,7 +7,7 @@ TEST_NAME=$1
 
 cd /tests_directory
 echo "Running test $1 ..."
-OUTPUT=`unbuffer qgis --optionspath /qgishome --nologo --code /usr/bin/qgis_testrunner.py $TEST_NAME  2>/dev/null`
+OUTPUT=`unbuffer qgis --nologo --code /usr/bin/qgis_testrunner.py $TEST_NAME  2>/dev/null`
 EXIT_CODE="$?"
 if [ -z "$OUTPUT" ]; then
     echo "ERROR: no output from the test runner! (exit code: ${EXIT_CODE})"
