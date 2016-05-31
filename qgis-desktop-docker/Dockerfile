@@ -35,13 +35,15 @@ RUN chmod +x /usr/bin/qgis_testrunner.sh
 ADD qgis_setup.sh /usr/bin/qgis_setup.sh
 RUN chmod +x /usr/bin/qgis_setup.sh
 
-# Monkey patch
+# Monkey patch to prevent modal stacktrace on python errors
 ADD startup.py /root/.qgis2/python/startup.py
 
 # Add start script
 ADD supervisord.conf /etc/supervisor/
 ADD supervisor.xvfb.conf /etc/supervisor/supervisor.d/
 
-ENV PYTHONPATH=/usr/share/qgis/python/
+# This paths are for both kartoza images (compiled) and for deb installed
+# needed to find PyQt wrapper provided by QGIS
+ENV PYTHONPATH=/usr/share/qgis/python/:/usr/lib/python2.7/dist-packages/qgis
 
 CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/supervisord.conf"]

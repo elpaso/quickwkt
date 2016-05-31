@@ -1,2 +1,4 @@
+pep8
 pexpect
-paver
+subprocess32
+capturer

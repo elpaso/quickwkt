@@ -24,6 +24,10 @@ printf "[Qgis]\n" >> $CONF_FILE
 SHOW_TIPS=`qgis --help 2>&1 | head -2 | grep 'QGIS - ' | perl -npe 'chomp; s/QGIS - (\d+)\.(\d+).*/showTips\1\2=false/'`
 printf "$SHOW_TIPS\n" >> $CONF_FILE
 
-# Enable plugin
-printf '[PythonPlugins]\n' >> $CONF_FILE
-printf "${PLUGIN_NAME}=true\n" >> $CONF_FILE
+
+if [ -n "$VAR" ]; then
+    # Enable plugin
+    printf '[PythonPlugins]\n' >> $CONF_FILE
+    printf "${PLUGIN_NAME}=true\n" >> $CONF_FILE
+fi
+
