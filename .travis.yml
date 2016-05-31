@@ -2,15 +2,16 @@ services:
     - docker
 before_install:
     - docker pull elpaso/qgis-testing-environment:2.14.2-kartoza
+    - docker tag elpaso/qgis-testing-environment:2.14.2-kartoza qgis-testing-environment
 install:
     - echo ${TRAVIS_BUILD_DIR}
-    - docker run -d --name qgis-desktop -v ${TRAVIS_BUILD_DIR}:/tests_directory -e DISPLAY=:99 qgis-desktop
+    - docker run -d --name  qgis-testing-environment -v ${TRAVIS_BUILD_DIR}:/tests_directory -e DISPLAY=:99  qgis-testing-environment
     - sleep 10
     # Setup qgis and enable the plugin
-    - docker exec -it qgis-desktop sh -c "qgis_setup.sh QuickWKT"
+    - docker exec -it  qgis-testing-environment sh -c "qgis_setup.sh QuickWKT"
     # If needd additional steps (for example make or paver setup, place it here)
     # Link the plugin to the tests_directory
-    - docker exec -it qgis-desktop sh -c "ln -s /tests_directory /root/.qgis2/python/plugins/QuickWKT"
+    - docker exec -it  qgis-testing-environment sh -c "ln -s /tests_directory /root/.qgis2/python/plugins/QuickWKT"
 
 script:
-    - docker exec -it qgis-desktop sh -c "qgis_testrunner.sh QuickWKT.tests.test_Plugin"
+    - docker exec -it  qgis-testing-environment sh -c "qgis_testrunner.sh QuickWKT.tests.test_Plugin"
