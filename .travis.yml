@@ -11,7 +11,7 @@ install:
     # Setup qgis and enable the plugin
     - docker exec -it qgis-desktop sh -c "qgis_setup.sh QuickWKT"
     # If needd additional steps (for example make or paver setup, place it here)
-    # Link the plugin
+    # Link the plugin to the tests_directory
     - docker exec -it qgis-desktop sh -c "ln -s /tests_directory /root/.qgis2/python/plugins/QuickWKT"
 
 script:
