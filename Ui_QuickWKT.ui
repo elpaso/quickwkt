@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>800</width>
-    <height>400</height>
+    <width>922</width>
+    <height>476</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -59,8 +59,11 @@
         <layout class="QHBoxLayout" name="horizontalLayout_6">
          <item>
           <widget class="QCheckBox" name="cbxnewlayer">
+           <property name="toolTip">
+            <string>Do not recycle the layers for the same geometry type.</string>
+           </property>
            <property name="text">
-            <string>Create new layer for every geometry type</string>
+            <string>Create a new layer for every geometry</string>
            </property>
           </widget>
          </item>

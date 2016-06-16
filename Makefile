@@ -8,7 +8,7 @@ install: copy2qgis
 
 PY_FILES = QuickWKT.py QuickWKTDialog.py __init__.py
 EXTRAS = about_icon.png quickwkt_icon.png
-UI_FILES = Ui_QuickWKT.py
+#UI_FILES = Ui_QuickWKT.py
                                                                                                                                                                                                                                                                                                                                                                                                                RESOURCE_FILES = resources.py
 
 compile: $(UI_FILES) $(RESOURCE_FILES)

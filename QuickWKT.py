@@ -110,18 +110,18 @@ class QuickWKT:
 
         layer = QgsVectorLayer(typeString, layerTitle, "memory")
 
-        #layer.setCrs(crs)
         # add attribute id, purely to make the features selectable from within attribute table
         layer.dataProvider().addAttributes([QgsField("name", QVariant.String)])
-        # First search for a layer with this name and type:
         registry = QgsMapLayerRegistry.instance()
-        for l in registry.mapLayersByName(layerTitle):
-            if l.dataProvider().dataSourceUri() == layer.dataProvider().dataSourceUri():
-                return l
+        # First search for a layer with this name and type if the cbx is not checked
+        if not self.dlg.cbxnewlayer.isChecked():
+            for l in registry.mapLayersByName(layerTitle):
+                if l.dataProvider().dataSourceUri() == layer.dataProvider().dataSourceUri():
+                    return l
         QgsMapLayerRegistry.instance().addMapLayer(layer)
         return layer
 
-    def parseGeometryCollection(self, wkt):
+    def parseGeometryCollection(self, wkt, layerTitle=None):
         #Cannot use split as there are commas in the geometry.
         start = 20
         bracketLevel = -1
@@ -131,10 +131,10 @@ class QuickWKT:
             elif wkt[i] == ')':
                 bracketLevel -= 1
             elif wkt[i] == ',' and bracketLevel == 0:
-                self.save_wkt(wkt[start:i])
+                self.save_wkt(wkt[start:i], layerTitle)
                 start = i + 1
 
-        self.save_wkt(wkt[start:-1])
+        self.save_wkt(wkt[start:-1], layerTitle)
 
     def decodeBinary(self, wkb):
         """Decode the binary wkb and return as a hex string"""
@@ -197,7 +197,7 @@ class QuickWKT:
         regex = re.compile("([a-zA-Z]+)[\s]*(.*)")
         # Clean newlines where there is not a new object
         wkt = re.sub('\n *(?![PLMC])', ' ', wkt)
-        qDebug("wkt: " + wkt);
+        qDebug("wkt: " + wkt)
         # check all lines in text and try to make geometry of it, collecting errors and features
         for wktLine in wkt.split('\n'):
             wktLine = wktLine.strip()
@@ -216,7 +216,7 @@ class QuickWKT:
 
                     #Geometry Collections
                     if wktLine.startswith("GEOMETRYCOLLECTION ("):
-                        self.parseGeometryCollection(wktLine)
+                        self.parseGeometryCollection(wktLine, layerTitle)
                         continue
 
                     geom = QgsGeometry.fromWkt(wktLine)
@@ -241,13 +241,8 @@ class QuickWKT:
 
         layer = None
         for typ in newFeatures.keys():
-            if self.dlg.cbxnewlayer.isChecked():
-                # TODO: remove: unused
-                self.layerNum += 1
-                layer = self.createLayer(typeMap[typ], layerTitle, newFeatures.get(typ)[0][1])
             for f in newFeatures.get(typ):
-                if not self.dlg.cbxnewlayer.isChecked():
-                    layer = self.createLayer(typeMap[typ], layerTitle , f[1])
+                layer = self.createLayer(typeMap[typ], layerTitle , f[1])
                 layer.dataProvider().addFeatures([f[0]])
                 layer.updateExtents()
                 layer.reload()
@@ -259,13 +254,13 @@ class QuickWKT:
     def save_geometry(self, geometry, layerTitle=None):
         """Shows the QgsGeometry in the map canvas, optionally specify a
         layer name otherwise it will be automatically created.
-        Returns the layer where features has been added (or None)."""
+        Returns the layer where features have been added (or None)."""
         if isinstance(geometry, QgsGeometry):
             return self.save_wkt(geometry.exportToWkt(), layerTitle)
         else:
             print "Error: this is not an instance of QgsGeometry"
             return None
-        
+
 
     def getLayer(self, layerId):
         for layer in QgsMapLayerRegistry.instance().mapLayers().values():

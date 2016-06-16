@@ -18,8 +18,8 @@ email                : info@itopen.it
  ***************************************************************************/
 """
 from PyQt4 import QtCore, QtGui
-from Ui_QuickWKT import Ui_QuickWKT
-# create the dialog
+from PyQt4 import uic
+import os
 
 
 EXAMPLES = {
@@ -35,11 +35,12 @@ EXAMPLES = {
         'POLYGON (WKB)' : r'0103000020E610000001000000050000000000000000003E4000000000000024400000000000002440000000000000344000000000000034400000000000004440000000000000444000000000000044400000000000003E400000000000002440'
     }
 
-class QuickWKTDialog(QtGui.QDialog, Ui_QuickWKT ):
+class QuickWKTDialog(QtGui.QDialog ):
     def __init__(self):
         QtGui.QDialog.__init__(self)
         # Set up the user interface from Designer.
-        self.setupUi(self)
+        ui_path = os.path.join(os.path.dirname(__file__), 'Ui_QuickWKT.ui')
+        uic.loadUi(ui_path, self)
         self.exampleComboBox.addItems(EXAMPLES.keys())
 
     @QtCore.pyqtSlot(str)
