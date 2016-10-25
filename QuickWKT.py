@@ -3,8 +3,8 @@
 /***************************************************************************
 Name                 : QuickWKT
 Description          : QuickWKT
-Date                 : 11/Sept/2013
-copyright            : (C) 2013-2015 by ItOpen
+Date                 : 25/Oct/2016
+copyright            : (C) 2011-2016 by ItOpen
 email                : elpaso@itopen.it
  ***************************************************************************/
 
@@ -48,7 +48,7 @@ class QuickWKT:
         self.action = QAction(QIcon(":/plugins/QuickWKT/quickwkt_icon.png"), \
         "&QuickWKT", self.iface.mainWindow())
         # connect the action to the run method
-        QObject.connect(self.action, SIGNAL("activated()"), self.quickwkt)
+        self.action.triggered.connect(self.quickwkt)
 
         # Add toolbar button and menu item
 
@@ -61,7 +61,7 @@ class QuickWKT:
         self.dlg.wkt.setPlainText(examples)
         self.dlg.layerTitle.setText('QuickWKT')
 
-        QObject.connect(self.dlg.clearButton, SIGNAL("clicked()"), self.clearButtonClicked)
+        self.dlg.clearButton.clicked.connect(self.clearButtonClicked)
 
 
     def clearButtonClicked(self):
