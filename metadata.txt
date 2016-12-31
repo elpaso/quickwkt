@@ -11,6 +11,8 @@ tracker:https://github.com/elpaso/quickwkt/issues
 about:Quick WKT/WKB is a plugin to easily show WKT/WKB data into QGIS. It also provides some utilities function and adds them to iface (see the about tab in the plugin's dialog for details).
 
 changelog:
+    Version 2.8:
+    * Fix EWKT on multiple lines #25 and long error dialog #24
     Version 2.7:
     * Fix old style signals on mac osx
     Version 2.6:

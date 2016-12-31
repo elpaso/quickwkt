@@ -88,9 +88,11 @@ class QuickWKT:
                 else:
                     self.save_wkb(text, layerTitle)
             except Exception, e:
+                # Cut
+                message = self.constraintMessage(unicode(e))
                 QMessageBox.information(self.iface.mainWindow(), \
                 QCoreApplication.translate('QuickWKT', "QuickWKT plugin error"), \
-                QCoreApplication.translate('QuickWKT', "There was an error with the service:<br /><strong>{0}</strong>").format(unicode(e)))
+                QCoreApplication.translate('QuickWKT', "There was an error with the service:<br /><strong>{0}</strong>").format(message))
                 return
 
             # Refresh the map
@@ -185,7 +187,12 @@ class QuickWKT:
         self.saveFeatures(layer, [f])
         return layer
 
-    # save wkt to file, wkt is in project's crs
+    def constraintMessage(self, message):
+        """return a shortened version of the message"""
+        if len(message) > 128:
+            message = message[:64] + ' [ .... ] ' + message[-64:]
+        return message
+
     def save_wkt(self, wkt, layerTitle=None):
         """Shows the WKT geometry in the map canvas, optionally specify a
         layer name otherwise it will be automatically created.
@@ -196,7 +203,7 @@ class QuickWKT:
         errors = ""
         regex = re.compile("([a-zA-Z]+)[\s]*(.*)")
         # Clean newlines where there is not a new object
-        wkt = re.sub('\n *(?![PLMC])', ' ', wkt)
+        wkt = re.sub('\n *(?![SPLMC])', ' ', wkt)
         qDebug("wkt: " + wkt)
         # check all lines in text and try to make geometry of it, collecting errors and features
         for wktLine in wkt.split('\n'):
@@ -234,6 +241,7 @@ class QuickWKT:
                     errors += ('-    ' + wktLine + '\n')
         if len(errors) > 0:
             # TODO either quit or succeed ignoring the errors
+            errors = self.constraintMessage(unicode(errors))
             infoString = QCoreApplication.translate('QuickWKT', "These line(s) are not WKT or not a supported WKT type:\n" + errors + "Do you want to ignore those lines (OK) \nor Cancel the operation (Cancel)?")
             res = QMessageBox.question(self.iface.mainWindow(), "Warning QuickWKT", infoString, QMessageBox.Ok | QMessageBox.Cancel)
             if res == QMessageBox.Cancel:
