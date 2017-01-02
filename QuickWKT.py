@@ -17,21 +17,30 @@ email                : elpaso@itopen.it
  *                                                                         *
  ***************************************************************************/
 """
+from __future__ import print_function
+from __future__ import absolute_import
+from builtins import str
+from builtins import range
+from builtins import object
 # Import the PyQt and QGIS libraries
-from PyQt4.QtCore import *
-from PyQt4.QtGui import *
+from qgis.PyQt.QtCore import *
+from qgis.PyQt.QtGui import *
+try:
+    from qgis.PyQt.QtWidgets import *
+except:
+    pass
 from qgis.core import *
 
+import os
 import re
 import binascii
+import inspect
 
-# Initialize Qt resources from file resources.py
-import resources
 # Import the code for the dialog
-from QuickWKTDialog import QuickWKTDialog
+from .QuickWKTDialog import QuickWKTDialog
 
 
-class QuickWKT:
+class QuickWKT(object):
 
     def __init__(self, iface):
         # Save reference to the QGIS interface
@@ -44,9 +53,9 @@ class QuickWKT:
         iface.show_geometry = self.save_geometry
 
     def initGui(self):
-        # Create action that will start plugin
-        self.action = QAction(QIcon(":/plugins/QuickWKT/quickwkt_icon.png"), \
-        "&QuickWKT", self.iface.mainWindow())
+        current_directory = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
+        self.action = QAction(QIcon(os.path.join(current_directory, "icons", "quickwkt_icon.png")),
+             "&QuickWKT", self.iface.mainWindow())
         # connect the action to the run method
         self.action.triggered.connect(self.quickwkt)
 
@@ -56,9 +65,8 @@ class QuickWKT:
         self.iface.addPluginToMenu("QuickWKT", self.action)
 
         # create dialog
-        examples = ""
         self.dlg = QuickWKTDialog()
-        self.dlg.wkt.setPlainText(examples)
+        self.dlg.wkt.setPlainText("")
         self.dlg.layerTitle.setText('QuickWKT')
 
         self.dlg.clearButton.clicked.connect(self.clearButtonClicked)
@@ -80,16 +88,16 @@ class QuickWKT:
         result = self.dlg.exec_()
         # See if OK was pressed
         if result == 1 and self.dlg.wkt.toPlainText():
-            text = unicode(self.dlg.wkt.toPlainText())
+            text = str(self.dlg.wkt.toPlainText())
             layerTitle = self.dlg.layerTitle.text() or 'QuickWKT'
             try:
                 if "(" in text:
                     self.save_wkt(text, layerTitle)
                 else:
                     self.save_wkb(text, layerTitle)
-            except Exception, e:
+            except Exception as e:
                 # Cut
-                message = self.constraintMessage(unicode(e))
+                message = self.constraintMessage(str(e))
                 QMessageBox.information(self.iface.mainWindow(), \
                 QCoreApplication.translate('QuickWKT', "QuickWKT plugin error"), \
                 QCoreApplication.translate('QuickWKT', "There was an error with the service:<br /><strong>{0}</strong>").format(message))
@@ -114,20 +122,23 @@ class QuickWKT:
 
         # add attribute id, purely to make the features selectable from within attribute table
         layer.dataProvider().addAttributes([QgsField("name", QVariant.String)])
-        registry = QgsMapLayerRegistry.instance()
+        try:
+            registry = QgsMapLayerRegistry.instance()
+        except:
+            registry = QgsProject.instance()
         # First search for a layer with this name and type if the cbx is not checked
         if not self.dlg.cbxnewlayer.isChecked():
             for l in registry.mapLayersByName(layerTitle):
                 if l.dataProvider().dataSourceUri() == layer.dataProvider().dataSourceUri():
                     return l
-        QgsMapLayerRegistry.instance().addMapLayer(layer)
+        registry.addMapLayer(layer)
         return layer
 
     def parseGeometryCollection(self, wkt, layerTitle=None):
         #Cannot use split as there are commas in the geometry.
         start = 20
         bracketLevel = -1
-        for i in xrange(len(wkt)):
+        for i in range(len(wkt)):
             if wkt[i] == '(':
                 bracketLevel += 1
             elif wkt[i] == ')':
@@ -241,20 +252,23 @@ class QuickWKT:
                     errors += ('-    ' + wktLine + '\n')
         if len(errors) > 0:
             # TODO either quit or succeed ignoring the errors
-            errors = self.constraintMessage(unicode(errors))
+            errors = self.constraintMessage(str(errors))
             infoString = QCoreApplication.translate('QuickWKT', "These line(s) are not WKT or not a supported WKT type:\n" + errors + "Do you want to ignore those lines (OK) \nor Cancel the operation (Cancel)?")
             res = QMessageBox.question(self.iface.mainWindow(), "Warning QuickWKT", infoString, QMessageBox.Ok | QMessageBox.Cancel)
             if res == QMessageBox.Cancel:
                 return
 
         layer = None
-        for typ in newFeatures.keys():
+        for typ in list(newFeatures.keys()):
             for f in newFeatures.get(typ):
                 layer = self.createLayer(typeMap[typ], layerTitle , f[1])
                 layer.dataProvider().addFeatures([f[0]])
                 layer.updateExtents()
                 layer.reload()
-                layer.setCacheImage(None)
+                try: # QGIS < 3
+                    layer.setCacheImage(None)
+                except:
+                    pass
                 self.canvas.refresh()
         return layer
 
@@ -266,12 +280,13 @@ class QuickWKT:
         if isinstance(geometry, QgsGeometry):
             return self.save_wkt(geometry.exportToWkt(), layerTitle)
         else:
-            print "Error: this is not an instance of QgsGeometry"
+            # fix_print_with_import
+            print("Error: this is not an instance of QgsGeometry")
             return None
 
 
     def getLayer(self, layerId):
-        for layer in QgsMapLayerRegistry.instance().mapLayers().values():
+        for layer in list(QgsMapLayerRegistry.instance().mapLayers().values()):
             if  layer.id().startsWith(layerId):
                 return layer
         return None

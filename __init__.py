@@ -22,5 +22,5 @@ email                : info@itopen.it
 
 def classFactory(iface):
     # load GeoCoding class from file GeoCoding
-    from QuickWKT import QuickWKT
+    from .QuickWKT import QuickWKT
     return QuickWKT(iface)
