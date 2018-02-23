@@ -27,7 +27,7 @@ clean:
 	rm -f Ui_QuickWKT.py resources.py
 
 package:
-	cd .. && find QuickWKT/  -print|grep -v Make | grep -v zip | grep -v .git | zip QuickWKT.zip -@
+	cd .. && find QuickWKT/  -print|grep -v Make | grep -v __ | grep -v zip | grep -v .git | zip QuickWKT.zip -@
 
 localrepo:
 	cp ../QuickWKT.zip ~/public_html/qgis/QuickWKT.zip

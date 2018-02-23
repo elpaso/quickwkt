@@ -2,8 +2,8 @@
 name:QuickWKT
 description:Quick WKT/WKB viewer, this Qgis Plugin opens a dialog where the user can paste (E)WKT and WKB code and see it on the map. Pasted data are stored in a temporay (memory) layer and are completely lost when the user quits QGIS.
 
-version:2.8
-qgisMinimumVersion:2.0
+version:3.0
+qgisMinimumVersion:3.0
 experimental:False
 homepage:http://www.itopen.it/2010/10/21/wkt-on-the-fly-qgis-plugin/
 repository:https://github.com/elpaso/quickwkt
@@ -11,6 +11,8 @@ tracker:https://github.com/elpaso/quickwkt/issues
 about:Quick WKT/WKB is a plugin to easily show WKT/WKB data into QGIS. It also provides some utilities function and adds them to iface (see the about tab in the plugin's dialog for details).
 
 changelog:
+    Version 3.0:
+    * QGIS 3
     Version 2.8:
     * Fix EWKT on multiple lines #25 and long error dialog #24
     Version 2.7:

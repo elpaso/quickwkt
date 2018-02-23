@@ -114,7 +114,7 @@ class QuickWKT(object):
         if crs:
             crs = QgsCoordinateReferenceSystem(crs, QgsCoordinateReferenceSystem.PostgisCrsId)
         else:
-            crs = self.canvas.mapRenderer().destinationCrs()
+            crs = self.canvas.mapSettings().destinationCrs()
 
         typeString = "%s?crs=%s" % (typeString, crs.authid())
 
@@ -286,7 +286,7 @@ class QuickWKT(object):
 
 
     def getLayer(self, layerId):
-        for layer in list(QgsMapLayerRegistry.instance().mapLayers().values()):
+        for layer in list(QgsProject.instance().mapLayers().values()):
             if  layer.id().startsWith(layerId):
                 return layer
         return None
