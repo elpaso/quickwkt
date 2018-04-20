@@ -17,16 +17,8 @@ email                : info@itopen.it
  *                                                                         *
  ***************************************************************************/
 """
-from builtins import str
-
-from qgis.PyQt import QtCore
-
-try:
-    from qgis.PyQt.QtGui import QDialog
-except ImportError:
-    from qgis.PyQt.QtWidgets import QDialog
-
-from qgis.PyQt import uic
+from PyQt4 import QtCore, QtGui
+from PyQt4 import uic
 import os
 
 
@@ -43,21 +35,19 @@ EXAMPLES = {
         'POLYGON (WKB)' : r'0103000020E610000001000000050000000000000000003E4000000000000024400000000000002440000000000000344000000000000034400000000000004440000000000000444000000000000044400000000000003E400000000000002440'
     }
 
-class QuickWKTDialog(QDialog ):
+class QuickWKTDialog(QtGui.QDialog ):
     def __init__(self):
-        QDialog.__init__(self)
+        QtGui.QDialog.__init__(self)
         # Set up the user interface from Designer.
         ui_path = os.path.join(os.path.dirname(__file__), 'Ui_QuickWKT.ui')
         uic.loadUi(ui_path, self)
-        self.exampleComboBox.addItems(list(EXAMPLES.keys()))
-        self.exampleComboBox.currentIndexChanged.connect(self.on_exampleComboBox_currentIndexChanged)
+        self.exampleComboBox.addItems(EXAMPLES.keys())
 
+    @QtCore.pyqtSlot(str)
     def on_exampleComboBox_currentIndexChanged(self, index):
         """
         Set and loads examples
         """
-        try: # Qt5
-            example = EXAMPLES[list(EXAMPLES)[index]]
-        except TypeError: # Qt4
-            example = EXAMPLES[str(index)]
+        example = EXAMPLES[str(index)]
         self.wkt.setPlainText(example)
+
