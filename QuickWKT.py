@@ -25,6 +25,7 @@ from builtins import object
 # Import the PyQt and QGIS libraries
 from qgis.PyQt.QtCore import *
 from qgis.PyQt.QtGui import *
+from qgis.gui import QgsMessageBar
 try:
     from qgis.PyQt.QtWidgets import *
 except:
@@ -52,6 +53,7 @@ class QuickWKT(object):
         iface.show_wkb = self.save_wkb
         iface.show_geometry = self.save_geometry
 
+
     def initGui(self):
         current_directory = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
         self.action = QAction(QIcon(os.path.join(current_directory, "icons", "quickwkt_icon.png")),
@@ -70,6 +72,8 @@ class QuickWKT(object):
         self.dlg.layerTitle.setText('QuickWKT')
 
         self.dlg.clearButton.clicked.connect(self.clearButtonClicked)
+        self.dlg.lineEdit.clear()
+        self.dlg.exportbutton.clicked.connect(self.select_output_directory)
 
 
     def clearButtonClicked(self):
@@ -102,39 +106,41 @@ class QuickWKT(object):
                 QCoreApplication.translate('QuickWKT', "QuickWKT plugin error"), \
                 QCoreApplication.translate('QuickWKT', "There was an error with the service:<br /><strong>{0}</strong>").format(message))
                 return
-
+            # # if export button clicked statement
+            if self.dlg.expshp.isChecked():
+                self.save_esri_shapefile()
             # Refresh the map
             self.canvas.refresh()
             return
 
-    def createLayer(self, typeString, layerTitle=None, crs=None):
+    def createLayer(self, typeString, layerTitle=None, crs=None):   
         # Automatic layer title in case is None
         if not layerTitle:
             layerTitle = 'QuickWKT %s' % typeString
         if crs:
             crs = QgsCoordinateReferenceSystem(crs, QgsCoordinateReferenceSystem.PostgisCrsId)
         else:
-            crs = self.canvas.mapSettings().destinationCrs()
+            crs = self.canvas.mapRenderer().destinationCrs()
 
         typeString = "%s?crs=%s" % (typeString, crs.authid())
 
-        layer = QgsVectorLayer(typeString, layerTitle, "memory")
+        layer = QgsVectorLayer(typeString, layerTitle, "memory")    #Important!!!    #Memory is Scratch Layer!!!
 
         # add attribute id, purely to make the features selectable from within attribute table
-        layer.dataProvider().addAttributes([QgsField("name", QVariant.String)])
+        layer.dataProvider().addAttributes([QgsField("name", QVariant.String)])    #Provide Attribute to Created Layer
         try:
             registry = QgsMapLayerRegistry.instance()
         except:
             registry = QgsProject.instance()
         # First search for a layer with this name and type if the cbx is not checked
         if not self.dlg.cbxnewlayer.isChecked():
-            for l in registry.mapLayersByName(layerTitle):
+            for l in registry.mapLayersByName(layerTitle):  #Retrieve a list of matching registered layers by layer name.
                 if l.dataProvider().dataSourceUri() == layer.dataProvider().dataSourceUri():
                     return l
         registry.addMapLayer(layer)
         return layer
 
-    def parseGeometryCollection(self, wkt, layerTitle=None):
+    def parseGeometryCollection(self, wkt, layerTitle=None):    #แจงว่ามันเป็น Geometry ประเภทอะไร
         #Cannot use split as there are commas in the geometry.
         start = 20
         bracketLevel = -1
@@ -217,7 +223,7 @@ class QuickWKT(object):
         wkt = re.sub('\n *(?![SPLMC])', ' ', wkt)
         qDebug("wkt: " + wkt)
         # check all lines in text and try to make geometry of it, collecting errors and features
-        for wktLine in wkt.split('\n'):
+        for wktLine in wkt.split('\n'):  #ตัวแบ่ง Line Text
             wktLine = wktLine.strip()
             if wktLine:
                 try:
@@ -244,7 +250,7 @@ class QuickWKT(object):
 
                     f = QgsFeature()
                     f.setGeometry(geom)
-                    if geom.type() in newFeatures:
+                    if geom.type() in newFeatures:                                                                          
                         newFeatures.get(geom.type()).append((f, srid))
                     else:
                         newFeatures[geom.type()] = [(f, srid)]
@@ -269,6 +275,7 @@ class QuickWKT(object):
                     layer.setCacheImage(None)
                 except:
                     pass
+
                 self.canvas.refresh()
         return layer
 
@@ -286,11 +293,30 @@ class QuickWKT(object):
 
 
     def getLayer(self, layerId):
-        for layer in list(QgsProject.instance().mapLayers().values()):
+        for layer in list(QgsMapLayerRegistry.instance().mapLayers().values()):
             if  layer.id().startsWith(layerId):
                 return layer
         return None
 
+    def save_esri_shapefile(self):
+        layers = self.iface.legendInterface().layers()
+        output_dir = self.dlg.lineEdit.text() + "/ESRI Shapefile/"
+        # create directory if it doesn't exist
+        if not os.path.exists(output_dir):
+            os.makedirs(output_dir)
+        for f in layers:
+                if f.type() == 0:
+                    writer = QgsVectorFileWriter.writeAsVectorFormat( f, output_dir + f.name() + ".shp", "utf-8", f.crs(), "ESRI Shapefile")
+                    if writer == QgsVectorFileWriter.NoError:
+                        self.iface.messageBar().pushMessage("Layer Saved", f.name() + ".shp saved to " + output_dir, 0, 2)
+                    else:
+                        self.iface.messageBar().pushMessage("Error saving layer:", f.name() + ".shp to " + output_dir, 1, 2)
+                else:
+                    pass
+
+    def select_output_directory(self):
+            output_dir = QFileDialog.getExistingDirectory(self.dlg, "Select output directory ", "")
+            self.dlg.lineEdit.setText(output_dir)
 
 if __name__ == "__main__":
     pass
