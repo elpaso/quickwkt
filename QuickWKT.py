@@ -154,13 +154,13 @@ class QuickWKT(object):
         value = binascii.a2b_hex(wkb)
         value = value[::-1]
         value = binascii.b2a_hex(value)
-        return value
+        return value.decode("UTF-8")
 
     def encodeBinary(self, value):
         wkb = binascii.a2b_hex("%08x" % value)
         wkb = wkb[::-1]
         wkb = binascii.b2a_hex(wkb)
-        return wkb
+        return wkb.decode("UTF-8")
 
     def saveFeatures(self, layer, features):
         layer.dataProvider().addFeatures(features)
@@ -186,9 +186,10 @@ class QuickWKT(object):
 
         geom = QgsGeometry()
         geom.fromWkb(binascii.a2b_hex(wkb))
-        qDebug("As wkt = " + geom.exportToWkt())
+        wkt = geom.asWkt()
+        qDebug("As wkt = " + wkt)
         qDebug("Geom type = " + str(geom.type()))
-        if not geom.exportToWkt():
+        if not wkt:
             qDebug("Geometry creation failed")
             return None
         f = QgsFeature()
