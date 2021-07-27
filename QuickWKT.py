@@ -88,7 +88,7 @@ class QuickWKT(object):
         result = self.dlg.exec_()
         # See if OK was pressed
         if result == 1 and self.dlg.wkt.toPlainText():
-            text = str(self.dlg.wkt.toPlainText())
+            text = str(self.dlg.wkt.toPlainText().upper())
             layerTitle = self.dlg.layerTitle.text() or 'QuickWKT'
             try:
                 if any(st in text for st in ["(", "EMPTY"]):
@@ -222,7 +222,7 @@ class QuickWKT(object):
             wktLine = wktLine.strip()
             if wktLine:
                 try:
-                    wktLine = wktLine.upper().replace("LINEARRING", "LINESTRING")
+                    wktLine = wktLine.replace("LINEARRING", "LINESTRING")
                     results = re.match(regex, wktLine)
                     wktLine = results.group(1) + " " + results.group(2)
                     qDebug("Attempting to save '%s'" % wktLine)
