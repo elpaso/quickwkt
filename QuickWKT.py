@@ -88,6 +88,7 @@ class QuickWKT(object):
         result = self.dlg.exec_()
         # See if OK was pressed
         if result == 1 and self.dlg.wkt.toPlainText():
+            self.new_layer_created = False
             text = str(self.dlg.wkt.toPlainText())
             layerTitle = self.dlg.layerTitle.text() or 'QuickWKT'
             try:
@@ -263,6 +264,10 @@ class QuickWKT(object):
         for typ in list(newFeatures.keys()):
             for f in newFeatures.get(typ):
                 layer = self.createLayer(typeMap[typ], layerTitle , f[1])
+                if self.dlg.cbxcleandata.isChecked() and not self.new_layer_created:
+                    self.new_layer_created = True
+                    layer.dataProvider().truncate()
+
                 layer.dataProvider().addFeatures([f[0]])
                 layer.updateExtents()
                 layer.reload()
