@@ -80,6 +80,13 @@
            </property>
           </spacer>
          </item>
+         <item>
+          <widget class="QCheckBox" name="cbxcleandata">
+           <property name="text">
+            <string>Start with an empty layer</string>
+           </property>
+          </widget>
+         </item>
         </layout>
        </item>
        <item>
