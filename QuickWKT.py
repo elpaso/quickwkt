@@ -89,10 +89,10 @@ class QuickWKT(object):
         # See if OK was pressed
         if result == 1 and self.dlg.wkt.toPlainText():
             self.new_layer_created = False
-            text = str(self.dlg.wkt.toPlainText())
+            text = str(self.dlg.wkt.toPlainText().upper())
             layerTitle = self.dlg.layerTitle.text() or 'QuickWKT'
             try:
-                if "(" in text:
+                if any(st in text for st in ["(", "EMPTY"]):
                     self.save_wkt(text, layerTitle)
                 else:
                     self.save_wkb(text, layerTitle)
@@ -214,7 +214,7 @@ class QuickWKT(object):
         typeMap = {0: "Point", 1: "LineString", 2: "Polygon"}
         newFeatures = {}
         errors = ""
-        regex = re.compile("([a-zA-Z]+)[\s]*(.*)")
+        regex = re.compile("([a-zA-Z]+)[\s]*(.*)|EMPTY")
         # Clean newlines where there is not a new object
         wkt = re.sub('\n *(?![SPLMC])', ' ', wkt)
         qDebug("wkt: " + wkt)
@@ -223,7 +223,7 @@ class QuickWKT(object):
             wktLine = wktLine.strip()
             if wktLine:
                 try:
-                    wktLine = wktLine.upper().replace("LINEARRING", "LINESTRING")
+                    wktLine = wktLine.replace("LINEARRING", "LINESTRING")
                     results = re.match(regex, wktLine)
                     wktLine = results.group(1) + " " + results.group(2)
                     qDebug("Attempting to save '%s'" % wktLine)
@@ -240,7 +240,7 @@ class QuickWKT(object):
                         continue
 
                     geom = QgsGeometry.fromWkt(wktLine)
-                    if not geom:
+                    if not geom and not geom.isEmpty():
                         errors += ('-    "' + wktLine + '" is invalid\n')
                         continue
 
