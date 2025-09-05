@@ -80,7 +80,7 @@ class QuickWKT(object):
         self.iface.removePluginMenu("QuickWKT", self.action)
         self.iface.removeToolBarIcon(self.action)
 
-     # run
+    # run
     def quickwkt(self):
         # show the dialog
         self.dlg.show()
