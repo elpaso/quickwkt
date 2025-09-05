@@ -85,7 +85,12 @@ class QuickWKT(object):
         # show the dialog
         self.dlg.show()
         self.dlg.adjustSize()
-        result = self.dlg.exec_()
+        try:
+            result = self.dlg.exec()
+        except AttributeError:
+            #  PyQt5 fallback
+            result = self.dlg.exec_()
+
         # See if OK was pressed
         if result == 1 and self.dlg.wkt.toPlainText():
             text = str(self.dlg.wkt.toPlainText().upper())
