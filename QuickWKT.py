@@ -89,7 +89,7 @@ class QuickWKT(object):
         # show the dialog
         self.dlg.show()
         self.dlg.adjustSize()
-        result = self.dlg.exec_()
+        result = self.dlg.exec()
         # See if OK was pressed
         if result == 1 and self.dlg.wkt.toPlainText():
             text = str(self.dlg.wkt.toPlainText().upper())
@@ -118,7 +118,7 @@ class QuickWKT(object):
         if not layerTitle:
             layerTitle = 'QuickWKT %s' % typeString
         if crs:
-            crs = QgsCoordinateReferenceSystem(crs, QgsCoordinateReferenceSystem.PostgisCrsId)
+            crs = QgsCoordinateReferenceSystem(crs, QgsCoordinateReferenceSystem.CrsType.PostgisCrsId)
         else:
             crs = self.canvas.mapSettings().destinationCrs()
 
@@ -231,7 +231,7 @@ class QuickWKT(object):
         srid = ""
         if wkt.startswith("SRID"):
             srid, wkt = wkt.split(";")  # SRID number
-            srid = int(re.match(".*?(\d+)", srid).group(1))
+            srid = int(re.match(r".*?(\d+)", srid).group(1))
             qDebug("SRID = '%d'" % srid)
 
         #Geometry Collections
@@ -256,7 +256,7 @@ class QuickWKT(object):
         typeMap = {0: "Point", 1: "LineString", 2: "Polygon"}
         newFeatures = {}
         errors = []
-        regex = re.compile("([a-zA-Z]+)[\s]*(.*)|EMPTY")
+        regex = re.compile(r"([a-zA-Z]+)\s*(.*)|EMPTY")
         # Handle multiple lines, each with its own geometry.
         for i, line in enumerate(text.splitlines()):
             line = line.strip()
@@ -289,8 +289,8 @@ class QuickWKT(object):
                 + errors +
                 "Do you want to ignore those lines (OK) \nor Cancel the operation (Cancel)?"
             )
-            res = QMessageBox.question(self.iface.mainWindow(), "Warning QuickWKT", infoString, QMessageBox.Ok | QMessageBox.Cancel)
-            if res == QMessageBox.Cancel:
+            res = QMessageBox.question(self.iface.mainWindow(), "Warning QuickWKT", infoString, QMessageBox.StandardButton.Ok | QMessageBox.StandardButton.Cancel)
+            if res == QMessageBox.StandardButton.Cancel:
                 return
 
         layer = None
