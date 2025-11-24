@@ -21,6 +21,9 @@ Contributing Autors:
 License
 -------
 
+GPLv3 - GNU General Public License v3
+
+https://www.gnu.org/licenses/gpl-3.0.txt
 
 Version 2.5
 -----------
@@ -43,7 +46,7 @@ Version 2.2
 
 - Fix #15: Trim input WKT text
 - Fix #17: feature request: allow writing layer name in the input dialog
- 
+
 Version 2.1
 -----------
 
@@ -54,10 +57,10 @@ Version 2.0
 -------------
 
 - QGIS 2.0.x compatible version
-    
+
 Version 1.9
 -----------
- 
+
 - added clear button
 
 
