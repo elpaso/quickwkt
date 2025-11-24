@@ -96,17 +96,8 @@ class QuickWKT(object):
             layerTitle = self.dlg.layerTitle.text() or 'QuickWKT'
             try:
                 self.save_from_text(text, layerTitle)
-            except Exception as e:
-                # Cut
-                message = self.constraintMessage(str(e))
-                QMessageBox.information(
-                    self.iface.mainWindow(),
-                    QCoreApplication.translate('QuickWKT', "QuickWKT plugin error"),
-                    QCoreApplication.translate(
-                        'QuickWKT',
-                        "There was an error handling line {}:<br /><strong>{}</strong>"
-                    ).format(i + 1, message)
-                )
+            except Exception:
+                # Exception handled in save_from_text
                 return
 
             # Refresh the map
@@ -224,6 +215,7 @@ class QuickWKT(object):
         but if the input has a geometry collection in it, multiple may be.
         """
         wkt = wkt.upper().replace("LINEARRING", "LINESTRING")
+        regex = re.compile(r"([a-zA-Z]+)\s*(.*)|EMPTY")
         results = re.match(regex, wkt)
         wkt = results.group(1) + " " + results.group(2)
         qDebug("Attempting to save '%s'" % wkt)
@@ -256,7 +248,6 @@ class QuickWKT(object):
         typeMap = {0: "Point", 1: "LineString", 2: "Polygon"}
         newFeatures = {}
         errors = []
-        regex = re.compile(r"([a-zA-Z]+)\s*(.*)|EMPTY")
         # Handle multiple lines, each with its own geometry.
         for i, line in enumerate(text.splitlines()):
             line = line.strip()
@@ -278,7 +269,8 @@ class QuickWKT(object):
                         newFeatures[geom.type()] = [(f, srid)]
             except InvalidGeometry as e:
                 errors.append(str(e))
-            except Exception:
+            except Exception as e:
+                QgsMessageLog.logMessage("Error parsing line %d: %s" % (i + 1, str(e)), "QuickWKT", Qgis.Warning)
                 errors.append(line)
         if errors:
             # TODO either quit or succeed ignoring the errors
@@ -296,15 +288,19 @@ class QuickWKT(object):
         layer = None
         for typ in list(newFeatures.keys()):
             for f in newFeatures.get(typ):
-                layer = self.createLayer(typeMap[typ], layerTitle , f[1])
-                layer.dataProvider().addFeatures([f[0]])
-                layer.updateExtents()
-                layer.reload()
-                try: # QGIS < 3
-                    layer.setCacheImage(None)
-                except:
-                    pass
-                self.canvas.refresh()
+                try:
+                    layer = self.createLayer(typeMap[typ], layerTitle , f[1])
+                    layer.dataProvider().addFeatures([f[0]])
+                    layer.updateExtents()
+                    layer.reload()
+                    try: # QGIS < 3
+                        layer.setCacheImage(None)
+                    except:
+                        pass
+                    self.canvas.refresh()
+                except Exception as e:
+                    QMessageBox.critical(self.iface.mainWindow(), "Error QuickWKT", "Error adding feature: %s" % str(e))
+                    continue
         return layer
 
 
