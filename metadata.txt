@@ -4,6 +4,7 @@ description:Quick WKT/WKB viewer, this Qgis Plugin opens a dialog where the user
 
 version:3.0
 qgisMinimumVersion:3.0
+supportsQt6:True
 experimental:False
 homepage:http://www.itopen.it/2010/10/21/wkt-on-the-fly-qgis-plugin/
 repository:https://github.com/elpaso/quickwkt

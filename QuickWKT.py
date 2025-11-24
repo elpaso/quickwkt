@@ -40,6 +40,10 @@ import inspect
 from .QuickWKTDialog import QuickWKTDialog
 
 
+class InvalidGeometry(ValueError):
+    pass
+
+
 class QuickWKT(object):
 
     def __init__(self, iface):
@@ -48,8 +52,8 @@ class QuickWKT(object):
         self.canvas = iface.mapCanvas()
         # TODO: remove: unused
         self.layerNum = 1
-        iface.show_wkt = self.save_wkt
-        iface.show_wkb = self.save_wkb
+        iface.show_wkt = self.save_from_text
+        iface.show_wkb = self.save_from_text
         iface.show_geometry = self.save_geometry
 
     def initGui(self):
@@ -85,22 +89,24 @@ class QuickWKT(object):
         # show the dialog
         self.dlg.show()
         self.dlg.adjustSize()
-        result = self.dlg.exec_()
+        result = self.dlg.exec()
         # See if OK was pressed
         if result == 1 and self.dlg.wkt.toPlainText():
             text = str(self.dlg.wkt.toPlainText().upper())
             layerTitle = self.dlg.layerTitle.text() or 'QuickWKT'
             try:
-                if any(st in text for st in ["(", "EMPTY"]):
-                    self.save_wkt(text, layerTitle)
-                else:
-                    self.save_wkb(text, layerTitle)
+                self.save_from_text(text, layerTitle)
             except Exception as e:
                 # Cut
                 message = self.constraintMessage(str(e))
-                QMessageBox.information(self.iface.mainWindow(), \
-                QCoreApplication.translate('QuickWKT', "QuickWKT plugin error"), \
-                QCoreApplication.translate('QuickWKT', "There was an error with the service:<br /><strong>{0}</strong>").format(message))
+                QMessageBox.information(
+                    self.iface.mainWindow(),
+                    QCoreApplication.translate('QuickWKT', "QuickWKT plugin error"),
+                    QCoreApplication.translate(
+                        'QuickWKT',
+                        "There was an error handling line {}:<br /><strong>{}</strong>"
+                    ).format(i + 1, message)
+                )
                 return
 
             # Refresh the map
@@ -112,7 +118,7 @@ class QuickWKT(object):
         if not layerTitle:
             layerTitle = 'QuickWKT %s' % typeString
         if crs:
-            crs = QgsCoordinateReferenceSystem(crs, QgsCoordinateReferenceSystem.PostgisCrsId)
+            crs = QgsCoordinateReferenceSystem(crs, QgsCoordinateReferenceSystem.CrsType.PostgisCrsId)
         else:
             crs = self.canvas.mapSettings().destinationCrs()
 
@@ -134,20 +140,21 @@ class QuickWKT(object):
         registry.addMapLayer(layer)
         return layer
 
-    def parseGeometryCollection(self, wkt, layerTitle=None):
+    def parseGeometryCollection(self, wkt):
         #Cannot use split as there are commas in the geometry.
         start = 20
         bracketLevel = -1
+        pieces = []
         for i in range(len(wkt)):
             if wkt[i] == '(':
                 bracketLevel += 1
             elif wkt[i] == ')':
                 bracketLevel -= 1
             elif wkt[i] == ',' and bracketLevel == 0:
-                self.save_wkt(wkt[start:i], layerTitle)
+                yield wkt[start:i]
                 start = i + 1
 
-        self.save_wkt(wkt[start:-1], layerTitle)
+        yield wkt[start:-1]
 
     def decodeBinary(self, wkb):
         """Decode the binary wkb and return as a hex string"""
@@ -168,10 +175,22 @@ class QuickWKT(object):
         layer.reload()
         self.canvas.refresh()
 
-    def save_wkb(self, wkb, layerTitle=None):
-        """Shows the WKB geometry in the map canvas, optionally specify a
-        layer name otherwise it will be automatically created
-        Returns the layer where features has been added (or None)."""
+    def constraintMessage(self, message):
+        """return a shortened version of the message"""
+        if len(message) > 128:
+            message = message[:64] + ' [ .... ] ' + message[-64:]
+        return message
+
+    def geoms_from_wkb(self, wkb):
+        """
+        Given a single line of hex WKB input,
+        returns a two-tuple:
+            (SRID, [list containing one QgsGeometry instance])
+
+        Raises InvalidGeometry on invalid input.
+
+        TODO: Handle geometry collections.
+        """
         SRID_FLAG = 0x20000000
 
         typeMap = {0: "Point", 1: "LineString", 2: "Polygon"}
@@ -190,73 +209,88 @@ class QuickWKT(object):
         qDebug("As wkt = " + wkt)
         qDebug("Geom type = " + str(geom.type()))
         if not wkt:
-            qDebug("Geometry creation failed")
-            return None
-        f = QgsFeature()
-        f.setGeometry(geom)
-        layer = self.createLayer(typeMap[geom.type()], layerTitle, srid)
+            raise InvalidGeometry('"%s" is invalid' % wkb)
+        return srid, [geom]
 
-        self.saveFeatures(layer, [f])
-        return layer
+    def geoms_from_wkt(self, wkt):
+        """
+        Given a single line of [E]WKT input,
+        returns a two-tuple:
+            (SRID, [list of QgsGeometry instances])
 
-    def constraintMessage(self, message):
-        """return a shortened version of the message"""
-        if len(message) > 128:
-            message = message[:64] + ' [ .... ] ' + message[-64:]
-        return message
+        Raises InvalidGeometry on invalid input.
 
-    def save_wkt(self, wkt, layerTitle=None):
+        Generally only one QgsGeometry will be returned,
+        but if the input has a geometry collection in it, multiple may be.
+        """
+        wkt = wkt.upper().replace("LINEARRING", "LINESTRING")
+        results = re.match(regex, wkt)
+        wkt = results.group(1) + " " + results.group(2)
+        qDebug("Attempting to save '%s'" % wkt)
+        #EWKT support
+        srid = ""
+        if wkt.startswith("SRID"):
+            srid, wkt = wkt.split(";")  # SRID number
+            srid = int(re.match(r".*?(\d+)", srid).group(1))
+            qDebug("SRID = '%d'" % srid)
+
+        #Geometry Collections
+        if wkt.startswith("GEOMETRYCOLLECTION ("):
+            pieces = self.parseGeometryCollection(wkt)
+        else:
+            pieces = [wkt]
+
+        geoms = []
+        for piece in pieces:
+            geom = QgsGeometry.fromWkt(wkt)
+            if not geom and not geom.isEmpty():
+                raise InvalidGeometry('"%s is invalid' % wkt)
+            geoms.append(geom)
+        return srid, geoms
+
+    def save_from_text(self, text, layerTitle=None):
         """Shows the WKT geometry in the map canvas, optionally specify a
         layer name otherwise it will be automatically created.
         Returns the layer where features has been added (or None)."""
         # supported types as needed for layer creation
         typeMap = {0: "Point", 1: "LineString", 2: "Polygon"}
         newFeatures = {}
-        errors = ""
-        regex = re.compile("([a-zA-Z]+)[\s]*(.*)|EMPTY")
-        # Clean newlines where there is not a new object
-        wkt = re.sub('\n *(?![SPLMC])', ' ', wkt)
-        qDebug("wkt: " + wkt)
-        # check all lines in text and try to make geometry of it, collecting errors and features
-        for wktLine in wkt.split('\n'):
-            wktLine = wktLine.strip()
-            if wktLine:
-                try:
-                    wktLine = wktLine.replace("LINEARRING", "LINESTRING")
-                    results = re.match(regex, wktLine)
-                    wktLine = results.group(1) + " " + results.group(2)
-                    qDebug("Attempting to save '%s'" % wktLine)
-                    #EWKT support
-                    srid = ""
-                    if wktLine.startswith("SRID"):
-                        srid, wktLine = wktLine.split(";")  # SRID number
-                        srid = int(re.match(".*?(\d+)", srid).group(1))
-                        qDebug("SRID = '%d'" % srid)
+        errors = []
+        regex = re.compile(r"([a-zA-Z]+)\s*(.*)|EMPTY")
+        # Handle multiple lines, each with its own geometry.
+        for i, line in enumerate(text.splitlines()):
+            line = line.strip()
+            if not line:
+                continue
 
-                    #Geometry Collections
-                    if wktLine.startswith("GEOMETRYCOLLECTION ("):
-                        self.parseGeometryCollection(wktLine, layerTitle)
-                        continue
+            try:
+                if "(" in line or 'EMPTY' in line:
+                    srid, geoms = self.geoms_from_wkt(line)
+                else:
+                    srid, geoms = self.geoms_from_wkb(line)
 
-                    geom = QgsGeometry.fromWkt(wktLine)
-                    if not geom and not geom.isEmpty():
-                        errors += ('-    "' + wktLine + '" is invalid\n')
-                        continue
-
+                for geom in geoms:
                     f = QgsFeature()
                     f.setGeometry(geom)
                     if geom.type() in newFeatures:
                         newFeatures.get(geom.type()).append((f, srid))
                     else:
                         newFeatures[geom.type()] = [(f, srid)]
-                except:
-                    errors += ('-    ' + wktLine + '\n')
-        if len(errors) > 0:
+            except InvalidGeometry as e:
+                errors.append(str(e))
+            except Exception:
+                errors.append(line)
+        if errors:
             # TODO either quit or succeed ignoring the errors
-            errors = self.constraintMessage(str(errors))
-            infoString = QCoreApplication.translate('QuickWKT', "These line(s) are not WKT or not a supported WKT type:\n" + errors + "Do you want to ignore those lines (OK) \nor Cancel the operation (Cancel)?")
-            res = QMessageBox.question(self.iface.mainWindow(), "Warning QuickWKT", infoString, QMessageBox.Ok | QMessageBox.Cancel)
-            if res == QMessageBox.Cancel:
+            errors = self.constraintMessage('\n'.join('    - %s' % e for e in errors))
+            infoString = QCoreApplication.translate(
+                'QuickWKT',
+                "These line(s) are not WKT/EWKT/HEXWKB:\n"
+                + errors +
+                "Do you want to ignore those lines (OK) \nor Cancel the operation (Cancel)?"
+            )
+            res = QMessageBox.question(self.iface.mainWindow(), "Warning QuickWKT", infoString, QMessageBox.StandardButton.Ok | QMessageBox.StandardButton.Cancel)
+            if res == QMessageBox.StandardButton.Cancel:
                 return
 
         layer = None
@@ -279,7 +313,7 @@ class QuickWKT(object):
         layer name otherwise it will be automatically created.
         Returns the layer where features have been added (or None)."""
         if isinstance(geometry, QgsGeometry):
-            return self.save_wkt(geometry.exportToWkt(), layerTitle)
+            return self.save_from_text(geometry.exportToWkt(), layerTitle)
         else:
             # fix_print_with_import
             print("Error: this is not an instance of QgsGeometry")
