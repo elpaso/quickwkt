@@ -248,6 +248,7 @@ class QuickWKT(object):
         typeMap = {0: "Point", 1: "LineString", 2: "Polygon"}
         newFeatures = {}
         errors = []
+        text = re.sub('\n *(?![PLMC])', ' ', text)
         # Handle multiple lines, each with its own geometry.
         for i, line in enumerate(text.splitlines()):
             line = line.strip()
