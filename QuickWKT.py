@@ -215,6 +215,10 @@ class QuickWKT(object):
         but if the input has a geometry collection in it, multiple may be.
         """
         wkt = wkt.upper().replace("LINEARRING", "LINESTRING")
+        # POLYHEDRALSURFACE and TIN are natively supported in QGIS 3.4+
+        # For older versions, convert to MULTIPOLYGON
+        if Qgis.QGIS_VERSION_INT < 34000:
+            wkt = wkt.replace("POLYHEDRALSURFACE", "MULTIPOLYGON").replace("TIN", "MULTIPOLYGON")
         regex = re.compile(r"([a-zA-Z]+)\s*(.*)|EMPTY")
         results = re.match(regex, wkt)
         wkt = results.group(1) + " " + results.group(2)
@@ -244,8 +248,6 @@ class QuickWKT(object):
         """Shows the WKT geometry in the map canvas, optionally specify a
         layer name otherwise it will be automatically created.
         Returns the layer where features has been added (or None)."""
-        # supported types as needed for layer creation
-        typeMap = {0: "Point", 1: "LineString", 2: "Polygon"}
         newFeatures = {}
         errors = []
         # Handle multiple lines, each with its own geometry.
@@ -263,10 +265,11 @@ class QuickWKT(object):
                 for geom in geoms:
                     f = QgsFeature()
                     f.setGeometry(geom)
-                    if geom.type() in newFeatures:
-                        newFeatures.get(geom.type()).append((f, srid))
+                    wkbType = geom.wkbType()
+                    if wkbType in newFeatures:
+                        newFeatures.get(wkbType).append((f, srid))
                     else:
-                        newFeatures[geom.type()] = [(f, srid)]
+                        newFeatures[wkbType] = [(f, srid)]
             except InvalidGeometry as e:
                 errors.append(str(e))
             except Exception as e:
@@ -286,10 +289,11 @@ class QuickWKT(object):
                 return
 
         layer = None
-        for typ in list(newFeatures.keys()):
-            for f in newFeatures.get(typ):
+        for wkbType in list(newFeatures.keys()):
+            for f in newFeatures.get(wkbType):
                 try:
-                    layer = self.createLayer(typeMap[typ], layerTitle , f[1])
+                    typeString = QgsWkbTypes.displayString(wkbType)
+                    layer = self.createLayer(typeString, layerTitle , f[1])
                     layer.dataProvider().addFeatures([f[0]])
                     layer.updateExtents()
                     layer.reload()
