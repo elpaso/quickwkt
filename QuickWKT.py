@@ -250,6 +250,7 @@ class QuickWKT(object):
         Returns the layer where features has been added (or None)."""
         newFeatures = {}
         errors = []
+        text = re.sub('\n *(?![PLMC])', ' ', text)
         # Handle multiple lines, each with its own geometry.
         for i, line in enumerate(text.splitlines()):
             line = line.strip()
